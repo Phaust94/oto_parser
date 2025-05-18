@@ -6,7 +6,8 @@ import random
 import tqdm
 import json
 
-from listing import (ListingItem, get_db_connection, get_db_credentials, query_url_as_human, get_ai_client)
+from helpers.connection import (query_url_as_human)
+from helpers.models import ListingItem
 
 __all__ = [
     "update_listings"

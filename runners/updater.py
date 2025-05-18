@@ -1,4 +1,4 @@
-from listing import (get_db_connection, get_db_credentials, get_ai_client)
+from helpers.connection import (get_db_connection, get_db_credentials, get_ai_client)
 from helpers.extractor import process_missing_metadata
 from helpers.daily_updater import update_listings
 

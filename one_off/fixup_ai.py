@@ -1,20 +1,16 @@
-import json
 import time
 import random
-import types
-from http.client import responses
 
 from google import genai
 import google.genai.errors
 
 import tqdm
-import typing
-from bs4 import BeautifulSoup
 
-from listing import (
-    ListingAdditionalInfo, ListingAIInfo, get_db_connection, get_db_credentials,
-    ListingAIMetadata, query_url_as_human, ListingGone, Saveable, get_ai_client
+from helpers.connection import (
+    get_db_connection, get_db_credentials,
+    get_ai_client
 )
+from helpers.models import ListingAIMetadata, ListingAIInfo
 
 
 def extract_info(listing_id: int, html_content: str, client) -> ListingAIInfo:

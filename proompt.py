@@ -1,17 +1,18 @@
 import json
 import time
 import random
-import types
 
 import tqdm
 from bs4 import BeautifulSoup
 from google import genai
 import google.genai.errors
 
-from listing import (
-    ListingAdditionalInfo, ListingAIInfo, get_db_connection, get_db_credentials,
-    ListingAIMetadata, query_url_as_human, ListingGone, get_ai_client
+from helpers.connection import (
+    get_db_connection, get_db_credentials,
+    query_url_as_human, get_ai_client
 )
+from helpers.models import ListingAdditionalInfo, ListingAIMetadata, ListingAIInfo, ListingGone
+
 
 def get_html(html_file_path: str):
     try:

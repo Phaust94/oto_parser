@@ -1,16 +1,13 @@
 import json
-import time
-import random
-import types
 
 import tqdm
 import typing
-from bs4 import BeautifulSoup
 
-from listing import (
-    ListingAdditionalInfo, ListingAIInfo, get_db_connection, get_db_credentials,
-    ListingAIMetadata, query_url_as_human, ListingGone, Saveable
+from helpers.connection import (
+    get_db_connection, get_db_credentials
 )
+from helpers.models import Saveable
+
 
 class ListingLocation(Saveable):
     listing_id: int
