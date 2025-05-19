@@ -1,7 +1,7 @@
 from helpers.connection import (get_db_connection, get_db_credentials, get_ai_client, get_tg_info)
 from helpers.extractor import process_missing_metadata
 from helpers.daily_updater import update_listings
-from helpers.notifier import send_updates
+from helpers.notifier import send_updates, send_status_update
 
 
 def main():
@@ -11,9 +11,10 @@ def main():
     ai_client = get_ai_client()
     tg_info = get_tg_info()
 
-    # update_listings(cursor, conn)
+    update_listings(cursor, conn)
     new_listing_info = process_missing_metadata(cursor, conn, ai_client)
     send_updates(new_listing_info, cursor, tg_info)
+    send_status_update(new_listing_info, tg_info)
 
     conn.close()
 

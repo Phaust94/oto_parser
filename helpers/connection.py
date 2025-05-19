@@ -84,5 +84,9 @@ def get_ai_client():
 
 
 def get_tg_info():
-    res = dict(bot_token=os.environ["TG_BOT_TOKEN"], chat_id=os.environ["TG_CHAT_ID"])
+    res = dict(
+        bot_token=os.environ["TG_BOT_TOKEN"],
+        chat_id=os.environ["TG_CHAT_ID"],
+        update_thread=os.environ["TG_UPDATES_THREAD_ID"]
+    )
     return res

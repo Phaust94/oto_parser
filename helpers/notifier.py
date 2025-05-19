@@ -2,6 +2,7 @@ import requests
 
 __all__ = [
     "send_updates",
+    "send_status_update",
 ]
 
 COLUMN_NAMES = [
@@ -64,13 +65,15 @@ def get_to_notify(new_listing_ids: list[int], cursor) -> list[dict]:
     return new_rooms_dicts
 
 
-def send_telegram_message(bot_token, chat_id, message):
+def send_telegram_message(bot_token, chat_id, message, thread: str = None, **_):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
         "chat_id": chat_id,
         "text": message,
         "parse_mode": "HTML"  # Optional: allows HTML formatting
     }
+    if thread:
+        payload["message_thread_id"] = thread
     response = requests.post(url, data=payload)
     return response.json()
 
@@ -91,9 +94,24 @@ def format_msg(di: dict) -> str:
 
 
 def send_updates(info: list[tuple[int, str]], cursor, tg_info) -> None:
+    if not info:
+        return None
     ids = [x[0] for x in info]
     to_notify_dicts = get_to_notify(ids, cursor)
     messages = [format_msg(di) for di in to_notify_dicts]
     for msg in messages:
         send_telegram_message(**tg_info, message=msg)
+    return None
+
+
+def format_status_msg(info: list[tuple[int, str]]) -> str:
+    res = """Done updating from Otodom!
+    Parsed ads: {n_ads}
+    """.format(n_ads=len(info))
+    return res
+
+
+def send_status_update(info: list[tuple[int, str]], tg_info) -> None:
+    msg = format_status_msg(info)
+    send_telegram_message(**tg_info, message=msg, thread=tg_info.get("update_thread"))
     return None

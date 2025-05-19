@@ -65,7 +65,11 @@ def extract_info(listing_id: int, html_content: str | None) -> ListingAdditional
         x for x in top_info if x.get('label') == 'free_from'
     ]
     if available_from_li:
-        available_from = available_from_li[0].get('values', [None])[0]
+        available_from_info = available_from_li[0].get('values', [None])
+        if available_from_info:
+            available_from = available_from_info[0]
+        else:
+            available_from = None
     else:
         available_from = None
 

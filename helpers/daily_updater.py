@@ -1,10 +1,10 @@
 import time
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
-from bs4 import BeautifulSoup
-
 import random
-import tqdm
 import json
+
+from bs4 import BeautifulSoup
+import tqdm
 
 from helpers.connection import (query_url_as_human)
 from helpers.models import ListingItem
