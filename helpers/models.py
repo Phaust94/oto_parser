@@ -150,6 +150,7 @@ class ListingAdditionalInfo(Saveable):
     has_ac: bool
     has_lift: bool
     windows: str | None
+    available_from: str | None = pydantic.Field(default=None)
 
     latitude: str
     longitude: str

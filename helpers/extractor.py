@@ -1,17 +1,13 @@
 import json
 import time
 import random
-import types
 
 import tqdm
 from bs4 import BeautifulSoup
 from google import genai
 import google.genai.errors
 
-from connection import (
-    get_db_connection, get_db_credentials,
-    query_url_as_human, get_ai_client
-)
+from helpers.connection import query_url_as_human
 from helpers.models import ListingAdditionalInfo, ListingAIMetadata, ListingAIInfo, ListingGone
 
 __all__ = [
@@ -64,6 +60,15 @@ def extract_info(listing_id: int, html_content: str | None) -> ListingAdditional
     soup_inner = BeautifulSoup(ad_info['description'], "html.parser")
     description_long = soup_inner.get_text(separator=" ", strip=True)
 
+    top_info = ad_info.get('topInformation', [])
+    available_from_li = [
+        x for x in top_info if x.get('label') == 'free_from'
+    ]
+    if available_from_li:
+        available_from = available_from_li[0].get('values', [None])[0]
+    else:
+        available_from = None
+
     metadata = ListingAdditionalInfo(
         listing_id=ad_info['id'],
         description_long=description_long,
@@ -75,6 +80,7 @@ def extract_info(listing_id: int, html_content: str | None) -> ListingAdditional
         windows=windows,
         latitude=str(ad_info['location']['coordinates']['latitude']),
         longitude=str(ad_info['location']['coordinates']['longitude']),
+        available_from=available_from,
         raw_info=json.dumps(ad_info),
     )
 
@@ -140,7 +146,7 @@ def get_html_url(url: str) -> str | None:
     return data
 
 
-def process_missing_metadata(cursor, conn, ai_client):
+def process_missing_metadata(cursor, conn, ai_client) -> list[tuple[int, str]]:
     urls = get_slugs(cursor)
     for listing_id, url in tqdm.tqdm(urls):
         body = get_html_url(url)
@@ -148,10 +154,9 @@ def process_missing_metadata(cursor, conn, ai_client):
         metadata.to_db(cursor)
         conn.commit()
         if not isinstance(metadata, ListingGone):
-            ai_info = extract_ai_info(listing_id, body, ai_client)
+            ai_info = extract_ai_info(listing_id, metadata.raw_info, ai_client)
             ai_info.to_db(conn.cursor())
             conn.commit()
         time.sleep(random.randint(0, 1000)/1000)
 
-    conn.close()
-    return None
+    return urls

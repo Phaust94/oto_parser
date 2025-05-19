@@ -106,7 +106,7 @@ def scrape(search_url: str, pages: int) -> list[ListingItem]:
     for i in range(pages):
         li_chunk = scrape_page(search_url, i)
         listing_items.extend(li_chunk)
-    return listing_items #966818869000
+    return listing_items
 
 
 def save_to_db(cursor, data: list[ListingItem], conn) -> bool:
@@ -121,10 +121,12 @@ def save_to_db(cursor, data: list[ListingItem], conn) -> bool:
     return all(present.values())
 
 
-def update_listings(cursor, conn):
+def update_listings(cursor, conn) -> bool:
+    all_present = False
     for i in tqdm.tqdm( range(PAGES)):
         li_chunk = scrape_page(SEARCH_FIRST_URL, i)
         all_present = save_to_db(cursor, li_chunk, conn)
         if all_present:
             break
         time.sleep(10 + random.randint(1, 1000)/1000)
+    return all_present

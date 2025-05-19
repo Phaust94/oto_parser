@@ -81,3 +81,8 @@ def query_url_as_human(url):
 def get_ai_client():
     client = genai.Client(api_key=os.environ['AI_PLATFORM_API_KEY'])
     return client
+
+
+def get_tg_info():
+    res = dict(bot_token=os.environ["TG_BOT_TOKEN"], chat_id=os.environ["TG_CHAT_ID"])
+    return res
