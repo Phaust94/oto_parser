@@ -14,6 +14,7 @@ __all__ = [
     "get_db_credentials",
     "query_url_as_human",
     "get_ai_client",
+    "get_tg_info",
 ]
 
 load_dotenv()

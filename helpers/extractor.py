@@ -11,7 +11,8 @@ from helpers.connection import query_url_as_human
 from helpers.models import ListingAdditionalInfo, ListingAIMetadata, ListingAIInfo, ListingGone
 
 __all__ = [
-    "process_missing_metadata"
+    "process_missing_metadata",
+    "check_alive",
 ]
 
 def get_html(html_file_path: str):
@@ -136,6 +137,22 @@ def get_slugs(cursor) -> list[tuple[int, str]]:
     and not scraped
     and not irrelevant
     group by listing_id 
+    order by listing_id 
+    """
+
+    cursor.execute(query)
+    results = cursor.fetchall()
+    return results
+
+
+def get_slugs_alive(cursor) -> list[tuple[int, str]]:
+    query = """
+    select listing_id, min(url) as url 
+    from otodom.listing_info_full
+    where 1=1
+    and not irrelevant
+    group by listing_id 
+    order by listing_id 
     """
 
     cursor.execute(query)
@@ -164,3 +181,19 @@ def process_missing_metadata(cursor, conn, ai_client) -> list[tuple[int, str]]:
         time.sleep(random.randint(0, 1000)/1000)
 
     return urls
+
+
+def check_alive(cursor, conn) -> tuple[list[int], list[int]]:
+    urls = get_slugs_alive(cursor)
+    alive, dead = [], []
+    for listing_id, url in tqdm.tqdm(urls):
+        body = get_html_url(url)
+        if body is None:
+            metadata = ListingGone(listing_id=listing_id)
+            metadata.to_db(cursor)
+            conn.commit()
+            dead.append(listing_id)
+        else:
+            alive.append(listing_id)
+        time.sleep(random.randint(0, 3000)/1000)
+    return alive, dead

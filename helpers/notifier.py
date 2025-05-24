@@ -1,8 +1,11 @@
+import textwrap
+
 import requests
 
 __all__ = [
     "send_updates",
     "send_status_update",
+    "send_status_update_alive",
 ]
 
 COLUMN_NAMES = [
@@ -113,5 +116,20 @@ def format_status_msg(info: list[tuple[int, str]]) -> str:
 
 def send_status_update(info: list[tuple[int, str]], tg_info) -> None:
     msg = format_status_msg(info)
+    send_telegram_message(**tg_info, message=msg, thread=tg_info.get("update_thread"))
+    return None
+
+
+def format_status_msg_alive(alive: list[int], dead: list[int]) -> str:
+    res = textwrap.dedent("""\
+    Done live-checking from Otodom!
+    Still alive ads: {n_alive}
+    Dead ads: {n_dead}.\
+    """.format(n_alive=len(alive), n_dead=len(dead)))
+    return res
+
+
+def send_status_update_alive(alive: list[int], dead: list[int], tg_info) -> None:
+    msg = format_status_msg_alive(alive, dead)
     send_telegram_message(**tg_info, message=msg, thread=tg_info.get("update_thread"))
     return None
