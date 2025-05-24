@@ -1,6 +1,7 @@
 import json
 import time
 import random
+import math
 
 import tqdm
 from bs4 import BeautifulSoup
@@ -13,7 +14,32 @@ from helpers.models import ListingAdditionalInfo, ListingAIMetadata, ListingAIIn
 __all__ = [
     "process_missing_metadata",
     "check_alive",
+    "haversine",
+    "ROOT",
 ]
+
+# Warsaw center
+ROOT = (52.23182630705096, 21.00591455254282)
+# Radius of the Earth in kilometers
+R = 6371.0
+
+def haversine(lat1, lon1, lat2, lon2):
+    # Convert latitude and longitude from degrees to radians
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+
+    # Haversine formula
+    a = (
+        math.sin(delta_phi / 2) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2) ** 2
+    )
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    # Distance in kilometers
+    distance = R * c
+    return distance
 
 def get_html(html_file_path: str):
     try:
@@ -74,6 +100,11 @@ def extract_info(listing_id: int, html_content: str | None) -> ListingAdditional
     else:
         available_from = None
 
+    lat = ad_info['location']['coordinates']['latitude']
+    lon = ad_info['location']['coordinates']['longitude']
+
+    dist = haversine(*ROOT, lat, lon)
+
     metadata = ListingAdditionalInfo(
         listing_id=ad_info['id'],
         description_long=description_long,
@@ -83,10 +114,11 @@ def extract_info(listing_id: int, html_content: str | None) -> ListingAdditional
         has_ac='air_conditioning' in extras,
         has_lift='lift' in extras,
         windows=windows,
-        latitude=str(ad_info['location']['coordinates']['latitude']),
-        longitude=str(ad_info['location']['coordinates']['longitude']),
+        latitude=str(lat),
+        longitude=str(lon),
         available_from=available_from,
         raw_info=json.dumps(ad_info),
+        distance_from_center_km=dist,
     )
 
     return metadata

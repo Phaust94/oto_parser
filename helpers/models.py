@@ -168,6 +168,8 @@ class ListingAdditionalInfo(Saveable):
 
     raw_info: str
 
+    distance_from_center_km: float
+
     TABLE_NAME: typing.ClassVar[str] = 'listing_metadata'
 
 

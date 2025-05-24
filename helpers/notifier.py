@@ -40,6 +40,7 @@ COLUMN_NAMES = [
    "irrelevant",
    "our_decision",
    "url",
+   "distance_from_center_km"
 ]
 
 def get_to_notify(new_listing_ids: list[int], cursor) -> list[dict]:
@@ -56,6 +57,7 @@ def get_to_notify(new_listing_ids: list[int], cursor) -> list[dict]:
     and not irrelevant
     and (n_rooms > 3 or (not kitchen_combined_with_living_room))
     and total_rent_price < 6700
+    and distance_from_center_km < 4.5
     and (allowed_with_pets is null or allowed_with_pets)
     and our_decision is null
     """
@@ -90,8 +92,9 @@ def format_msg(di: dict) -> str:
     District: {district_specific}
     Occasional lease: {occasional_lease}
     Availability date: {availability_date}
+    Distance: {distance_from_center_km}
     Location: <a href="https://www.google.com/maps/dir/Pa%C5%82ac+Kultury+i+Nauki,+Pa%C5%82ac+Kultury+i+Nauki,+plac+Defilad,+Warszawa/{latitude},{longitude}">Maps</a>
-    Metabase link: <a href="https://metabase.home.arpa/dashboard/2-warsaw?bedrooms=&decision=&listing_id={listing_id}&not_okazjonalny=&not_pets=&price_max=&rooms=&undecided%253F=">Metabase</a>
+    Metabase link: <a href="https://metabase.home.arpa/dashboard/2-warsaw?bedrooms=&decision=&listing_id={listing_id}&not_okazjonalny=&not_pets=&distance_from_center_max=&price_max=&not_separate_kitchen=&rooms=&undecided%253F=">Metabase</a>
     """.format(**di)
     return res
 
