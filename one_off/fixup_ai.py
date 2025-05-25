@@ -50,7 +50,7 @@ def extract_info(listing_id: int, html_content: str, client) -> ListingAIInfo:
 def get_infos(cursor) -> list[tuple[int, str]]:
     query = """
     select listing_id, description_long
-    from otodom.listing_metadata
+    from listing_metadata
     where 1=1
     and listing_id in (
         select listing_id from listing_ai_metadata

@@ -15,6 +15,8 @@ __all__ = [
     "query_url_as_human",
     "get_ai_client",
     "get_tg_info",
+    "CITY",
+    "DATABASE",
 ]
 
 load_dotenv()
@@ -40,7 +42,7 @@ def get_db_credentials():
     creds = (
         os.environ.get("DB_HOST"),
         os.environ.get("DB_PORT"),
-        os.environ.get("DB_DATABASE"),
+        DATABASE,
         os.environ.get("DB_USER"),
         os.environ.get("DB_PASSWORD"),
     )
@@ -91,3 +93,10 @@ def get_tg_info():
         update_thread=os.environ["TG_UPDATES_THREAD_ID"]
     )
     return res
+
+CITY = os.environ["CITY"]
+DB_DI = {
+    "Warsaw": "otodom",
+    "Krakow": "otodom_krakow",
+}
+DATABASE = DB_DI[CITY]

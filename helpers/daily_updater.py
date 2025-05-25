@@ -6,14 +6,18 @@ import json
 from bs4 import BeautifulSoup
 import tqdm
 
-from helpers.connection import (query_url_as_human)
+from helpers.connection import (query_url_as_human, CITY)
 from helpers.models import ListingItem
 
 __all__ = [
     "update_listings"
 ]
 
-SEARCH_FIRST_URL = "https://www.otodom.pl/pl/wyniki/wynajem/mieszkanie/mazowieckie/warszawa/warszawa/warszawa?roomsNumber=%5BTHREE%2CFOUR%2CFIVE%2CSIX_OR_MORE%5D&extras=%5BGARAGE%5D&heating=%5BURBAN%5D&by=LATEST&direction=DESC&viewType=listing&page=2"
+SEARCH_DICT = {
+    "Warsaw": "https://www.otodom.pl/pl/wyniki/wynajem/mieszkanie/mazowieckie/warszawa/warszawa/warszawa?roomsNumber=%5BTHREE%2CFOUR%2CFIVE%2CSIX_OR_MORE%5D&extras=%5BGARAGE%5D&heating=%5BURBAN%5D&by=LATEST&direction=DESC&viewType=listing&page=2",
+    "Krakow": "https://www.otodom.pl/pl/wyniki/wynajem/mieszkanie/malopolskie/krakow/krakow/krakow?heating=%5BURBAN%5D&by=LATEST&direction=DESC&viewType=listing&page=2&priceMax=2500",
+}
+SEARCH_FIRST_URL = SEARCH_DICT[CITY]
 
 def parse_url_parameters(url):
     """
@@ -123,7 +127,7 @@ def save_to_db(cursor, data: list[ListingItem], conn) -> bool:
 
 def update_listings(cursor, conn) -> bool:
     all_present = False
-    for i in tqdm.tqdm( range(PAGES)):
+    for i in tqdm.tqdm(range(PAGES)):
         li_chunk = scrape_page(SEARCH_FIRST_URL, i)
         all_present = save_to_db(cursor, li_chunk, conn)
         if all_present:

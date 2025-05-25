@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from google import genai
 import google.genai.errors
 
-from helpers.connection import query_url_as_human
+from helpers.connection import query_url_as_human, CITY
 from helpers.models import ListingAdditionalInfo, ListingAIMetadata, ListingAIInfo, ListingGone
 
 __all__ = [
@@ -19,7 +19,12 @@ __all__ = [
 ]
 
 # Warsaw center
-ROOT = (52.23182630705096, 21.00591455254282)
+ROOT_DICT = {
+    "Warsaw": (52.23182630705096, 21.00591455254282),
+    "Krakow": (50.06196857618123, 19.938187263875268)
+}
+ROOT = ROOT_DICT[CITY]
+
 # Radius of the Earth in kilometers
 R = 6371.0
 
@@ -75,6 +80,8 @@ def extract_info(listing_id: int, html_content: str | None) -> ListingAdditional
         floor_info = floor_info[0]
         if floor_info == 'ground_floor':
             floor = 0
+        elif floor_info == 'cellar':
+            floor = -1
         else:
             floor = int(floor_info.split('_')[-1])
     floor_total = tg.get('Building_floors_num')
@@ -164,7 +171,7 @@ def extract_ai_info(listing_id: int, html_content: str, client) -> ListingAIInfo
 def get_slugs(cursor) -> list[tuple[int, str]]:
     query = """
     select listing_id, min(url) as url 
-    from otodom.listing_info_full
+    from listing_info_full
     where 1=1
     and not scraped
     and not irrelevant
@@ -180,7 +187,7 @@ def get_slugs(cursor) -> list[tuple[int, str]]:
 def get_slugs_alive(cursor) -> list[tuple[int, str]]:
     query = """
     select listing_id, min(url) as url 
-    from otodom.listing_info_full
+    from listing_info_full
     where 1=1
     and not irrelevant
     group by listing_id 
