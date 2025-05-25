@@ -47,13 +47,12 @@ COLUMN_NAMES = [
 
 CONDITIONS_DI = {
     "Warsaw":
-        """and (n_rooms > 3 or (not kitchen_combined_with_living_room))
+        """AND (n_rooms > 3 or (not kitchen_combined_with_living_room))
         and total_rent_price < 6700
         and distance_from_center_km < 4.5
         and (allowed_with_pets is null or allowed_with_pets)""",
     "Krakow":
-        """and n_rooms = 1 
-        AND total_rent_price <= 2000
+        """AND total_rent_price <= 2100
         AND (has_lift OR floor <= 1)"""
 }
 
@@ -127,20 +126,21 @@ def send_updates(info: list[tuple[int, str]], cursor, tg_info) -> None:
     to_notify_dicts = get_to_notify(ids, cursor)
     messages = [format_msg(di) for di in to_notify_dicts]
     for msg in messages:
-        send_telegram_message(**tg_info, message=msg, thread=str(UPDATE_THREAD_DI[CITY]))
+        send_telegram_message(**tg_info, message=msg, thread=tg_info["update_thread"])
     return None
 
 
 def format_status_msg(info: list[tuple[int, str]]) -> str:
-    res = """Done updating from Otodom for {city}!
-    Parsed ads: {n_ads}
-    """.format(n_ads=len(info), city=CITY)
+    res = textwrap.dedent("""\
+    Done updating from Otodom for {city}!
+    Parsed ads: {n_ads}\
+    """).format(n_ads=len(info), city=CITY)
     return res
 
 
 def send_status_update(info: list[tuple[int, str]], tg_info) -> None:
     msg = format_status_msg(info)
-    send_telegram_message(**tg_info, message=msg, thread=tg_info.get("update_thread"))
+    send_telegram_message(**tg_info, message=msg, thread=tg_info["update_status_thread"])
     return None
 
 
@@ -153,12 +153,7 @@ def format_status_msg_alive(alive: list[int], dead: list[int]) -> str:
     return res
 
 
-UPDATE_THREAD_DI = {
-    "Warsaw": 1,
-    "Krakow": 61,
-}
-
 def send_status_update_alive(alive: list[int], dead: list[int], tg_info) -> None:
     msg = format_status_msg_alive(alive, dead)
-    send_telegram_message(**tg_info, message=msg, thread=tg_info.get("update_thread"))
+    send_telegram_message(**tg_info, message=msg, thread=tg_info["update_status_thread"])
     return None
