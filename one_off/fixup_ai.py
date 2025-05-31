@@ -6,10 +6,7 @@ import google.genai.errors
 
 import tqdm
 
-from helpers.connection import (
-    get_db_connection, get_db_credentials,
-    get_ai_client
-)
+from helpers.connection import get_db_connection, get_db_credentials, get_ai_client
 from helpers.models import ListingAIMetadata, ListingAIInfo
 
 
@@ -28,17 +25,18 @@ def extract_info(listing_id: int, html_content: str, client) -> ListingAIInfo:
 
     ai_data = dict(
         # model='gemini-2.5-flash-preview-04-17',
-        model='gemini-2.0-flash',
+        model="gemini-2.0-flash",
         contents=message,
-            config={
-                "response_mime_type": "application/json",
-                "response_schema": ListingAIMetadata,
-            })
+        config={
+            "response_mime_type": "application/json",
+            "response_schema": ListingAIMetadata,
+        },
+    )
 
     try:
         response = client.models.generate_content(**ai_data)
     except genai.errors.ClientError as e:
-        if e.status == 'RESOURCE_EXHAUSTED':
+        if e.status == "RESOURCE_EXHAUSTED":
             time.sleep(60)
         else:
             raise
@@ -46,6 +44,7 @@ def extract_info(listing_id: int, html_content: str, client) -> ListingAIInfo:
     inst = response.parsed
     ai_info = ListingAIInfo.from_ai_metadata(inst, listing_id=listing_id)
     return ai_info
+
 
 def get_infos(cursor) -> list[tuple[int, str]]:
     query = """
@@ -76,13 +75,14 @@ def main():
     for listing_id, body in tqdm.tqdm(
         urls,
     ):
-        metadata = extract_info(listing_id,  body, client)
+        metadata = extract_info(listing_id, body, client)
         metadata.to_db_patch(cursor)
-        time.sleep(random.randint(0, 1000)/1000)
+        time.sleep(random.randint(0, 1000) / 1000)
         conn.commit()
 
     conn.close()
     return None
+
 
 if __name__ == "__main__":
     main()

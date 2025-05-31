@@ -16,30 +16,33 @@ __all__ = [
     "ListingGone",
 ]
 
+
 class Saveable(pydantic.BaseModel):
 
     TABLE_NAME: typing.ClassVar[str]
 
     def to_db(self, cursor: mysql.connector.cursor.MySQLCursor) -> bool:
         try:
-            item_data = self.model_dump(exclude_none=True) # Pydantic v2+
+            item_data = self.model_dump(exclude_none=True)  # Pydantic v2+
         except AttributeError:
-            item_data = self.dict(exclude_none=True) # Pydantic v1
+            item_data = self.dict(exclude_none=True)  # Pydantic v1
 
         # Prepare column names and values for the INSERT part
-        columns = ', '.join(item_data.keys())
+        columns = ", ".join(item_data.keys())
         # Use %s as placeholders for values to prevent SQL injection
-        placeholders = ', '.join(['%s'] * len(item_data))
+        placeholders = ", ".join(["%s"] * len(item_data))
         values = list(item_data.values())
 
         # Prepare the ON DUPLICATE KEY UPDATE part
         # We update all fields except the primary key (listing_id)
-        upd_fields_list = [f"{col} = VALUES({col})" for col in item_data.keys() if col != 'listing_id']
+        upd_fields_list = [
+            f"{col} = VALUES({col})" for col in item_data.keys() if col != "listing_id"
+        ]
         if upd_fields_list:
-            update_fields = ', '.join(upd_fields_list)
+            update_fields = ", ".join(upd_fields_list)
             update_stmt = f"""ON DUPLICATE KEY UPDATE {update_fields}"""
         else:
-            update_stmt = ''
+            update_stmt = ""
 
         # Construct the full SQL query
         sql = f"""
@@ -57,7 +60,6 @@ class Saveable(pydantic.BaseModel):
         else:
             return False
 
-
     def is_present_in_db(self, cursor: mysql.connector.cursor.MySQLCursor) -> bool:
 
         # Construct the full SQL query
@@ -67,7 +69,7 @@ class Saveable(pydantic.BaseModel):
         """
 
         try:
-            cursor.execute(sql,  {'listing_id': self.listing_id} )
+            cursor.execute(sql, {"listing_id": self.listing_id})
             res = cursor.fetchall()
             return bool(res)
         except mysql.connector.Error as err:
@@ -78,14 +80,16 @@ class Saveable(pydantic.BaseModel):
 
     def to_db_patch(self, cursor: mysql.connector.cursor.MySQLCursor) -> bool:
         try:
-            item_data = self.model_dump(exclude_none=True) # Pydantic v2+
+            item_data = self.model_dump(exclude_none=True)  # Pydantic v2+
         except AttributeError:
-            item_data = self.dict(exclude_none=True) # Pydantic v1
+            item_data = self.dict(exclude_none=True)  # Pydantic v1
 
         # Prepare the ON DUPLICATE KEY UPDATE part
         # We update all fields except the primary key (listing_id)
-        upd_fields_list = [f"{col} = %({col})s" for col in item_data.keys() if col != 'listing_id']
-        update_fields = ', '.join(upd_fields_list)
+        upd_fields_list = [
+            f"{col} = %({col})s" for col in item_data.keys() if col != "listing_id"
+        ]
+        update_fields = ", ".join(upd_fields_list)
         # Construct the full SQL query
         sql = f"""
         UPDATE {self.__class__.TABLE_NAME}
@@ -123,26 +127,28 @@ class ListingItem(Saveable):
 
     created_on: datetime.datetime | None = pydantic.Field(default=None)
 
-    TABLE_NAME: typing.ClassVar[str] = 'listing_items'
+    TABLE_NAME: typing.ClassVar[str] = "listing_items"
 
     @classmethod
     def from_otodom_data(cls, item: dict) -> ListingItem:
-        street_info = (((item.get('location') or {}).get('address') or {}).get('street') or {})
+        street_info = ((item.get("location") or {}).get("address") or {}).get(
+            "street"
+        ) or {}
         district, district_specific = get_district_info(item)
-        created_on = item.get('dateCreatedFirst')
+        created_on = item.get("dateCreatedFirst")
         if created_on:
             created_on = datetime.datetime.strptime(created_on, "%Y-%m-%d %H:%M:%S")
 
         data = dict(
-            listing_id=item['id'],
-            title=item['title'],
-            slug=item['slug'],
-            rent_price=(item.get('totalPrice') or {}).get('value'),
-            administrative_price=(item.get('rentPrice') or {}).get('value'),
-            area_m2=item.get('areaInSquareMeters'),
-            n_rooms=get_rooms_number(item.get('roomsNumber')),
-            street=street_info.get('name'),
-            street_number=street_info.get('number'),
+            listing_id=item["id"],
+            title=item["title"],
+            slug=item["slug"],
+            rent_price=(item.get("totalPrice") or {}).get("value"),
+            administrative_price=(item.get("rentPrice") or {}).get("value"),
+            area_m2=item.get("areaInSquareMeters"),
+            n_rooms=get_rooms_number(item.get("roomsNumber")),
+            street=street_info.get("name"),
+            street_number=street_info.get("number"),
             district=district,
             district_specific=district_specific,
             created_on=created_on,
@@ -170,7 +176,7 @@ class ListingAdditionalInfo(Saveable):
 
     distance_from_center_km: float
 
-    TABLE_NAME: typing.ClassVar[str] = 'listing_metadata'
+    TABLE_NAME: typing.ClassVar[str] = "listing_metadata"
 
 
 class ListingAIMetadata(pydantic.BaseModel):
@@ -186,12 +192,15 @@ class ListingAIInfo(ListingAIMetadata, Saveable):
 
     updated_at: datetime.datetime | None
 
-    TABLE_NAME: typing.ClassVar[str] = 'listing_ai_metadata'
+    TABLE_NAME: typing.ClassVar[str] = "listing_ai_metadata"
 
     @classmethod
-    def from_ai_metadata(cls, ai_metadata: ListingAIMetadata, listing_id: int) -> ListingAIInfo:
+    def from_ai_metadata(
+        cls, ai_metadata: ListingAIMetadata, listing_id: int
+    ) -> ListingAIInfo:
         inst = cls(
-            listing_id=listing_id, **ai_metadata.model_dump(mode='python'),
+            listing_id=listing_id,
+            **ai_metadata.model_dump(mode="python"),
             updated_at=datetime.datetime.utcnow(),
         )
         return inst
@@ -200,7 +209,7 @@ class ListingAIInfo(ListingAIMetadata, Saveable):
 class ListingGone(Saveable):
     listing_id: int
 
-    TABLE_NAME: typing.ClassVar[str] = 'irrelevant_listings'
+    TABLE_NAME: typing.ClassVar[str] = "irrelevant_listings"
 
 
 def get_rooms_number(txt: str | None) -> int | None:
@@ -220,9 +229,11 @@ def get_rooms_number(txt: str | None) -> int | None:
 
 
 def get_district_info(item: dict) -> tuple[str | None, str | None]:
-    district_info = (((item.get('location') or {}).get('reverseGeocoding') or {}).get('locations') or [])
+    district_info = ((item.get("location") or {}).get("reverseGeocoding") or {}).get(
+        "locations"
+    ) or []
     if not district_info:
         return (None, None)
-    fine = district_info[-1].get('fullName', '').split(',')[0]
-    coarse = district_info[-2].get('fullName', '').split(',')[0]
+    fine = district_info[-1].get("fullName", "").split(",")[0]
+    coarse = district_info[-2].get("fullName", "").split(",")[0]
     return fine, coarse

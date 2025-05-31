@@ -1,4 +1,4 @@
-from helpers.connection import (get_db_connection, get_db_credentials, get_tg_info)
+from helpers.connection import get_db_connection, get_db_credentials, get_tg_info
 from helpers.extractor import check_alive
 from helpers.notifier import send_status_update_alive
 
@@ -17,5 +17,5 @@ def main():
     return None
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

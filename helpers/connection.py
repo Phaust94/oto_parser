@@ -26,11 +26,7 @@ def get_db_connection(host, port, database, user, password):
     """Establishes a connection to the MySQL database."""
     try:
         conn = mysql.connector.connect(
-            host=host,
-            port=port,
-            database=database,
-            user=user,
-            password=password
+            host=host, port=port, database=database, user=user, password=password
         )
         return conn
     except mysql.connector.Error as err:
@@ -66,23 +62,23 @@ def query_url_as_human(url):
     """
     # Define headers to mimic a browser
     headers = {
-        'User-Agent': get_random_user_agent(), # Use a random user agent
-        'Accept': '*/*',
+        "User-Agent": get_random_user_agent(),  # Use a random user agent
+        "Accept": "*/*",
         # 'Accept-Language': 'en-US,en;q=0.5',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
     }
 
     try:
         response = requests.get(url, headers=headers)
-        response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
         return response
     except requests.exceptions.RequestException as e:
         return None
 
 
 def get_ai_client():
-    client = genai.Client(api_key=os.environ['AI_PLATFORM_API_KEY'])
+    client = genai.Client(api_key=os.environ["AI_PLATFORM_API_KEY"])
     return client
 
 
@@ -91,9 +87,14 @@ def get_tg_info():
         bot_token=os.environ["TG_BOT_TOKEN"],
         chat_id=os.environ[f"TG_CHAT_ID_{CITY.upper()}"],
         update_thread=os.environ[f"TG_REGULAR_THREAD_ID_{CITY.upper()}"],
-        update_status_thread=os.environ[f"TG_UPDATES_THREAD_ID_{CITY.upper()}"]
+        update_status_thread=os.environ[f"TG_UPDATES_THREAD_ID_{CITY.upper()}"],
+        update_no_distance_thread=os.environ.get(
+            f"TG_NO_DISTANCE_THREAD_ID_{CITY.upper()}",
+            os.environ[f"TG_REGULAR_THREAD_ID_{CITY.upper()}"],
+        ),
     )
     return res
+
 
 CITY = os.environ["CITY"]
 DB_DI = {
