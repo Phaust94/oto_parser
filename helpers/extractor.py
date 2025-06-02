@@ -165,11 +165,13 @@ def extract_ai_info(listing_id: int, html_content: str, client) -> ListingAIInfo
 
     try:
         response = client.models.generate_content(**ai_data)
-    except genai.errors.ClientError as e:
-        if e.status == "RESOURCE_EXHAUSTED":
-            time.sleep(60)
+    except Exception as e:
+        if getattr(e, "status") == "RESOURCE_EXHAUSTED":
+            delay = 60
         else:
-            raise
+            delay = 1
+            ai_data["model"] = "gemini-2.0-flash-lite"
+        time.sleep(delay)
         response = client.models.generate_content(**ai_data)
     inst = response.parsed
     ai_info = ListingAIInfo.from_ai_metadata(inst, listing_id=listing_id)
