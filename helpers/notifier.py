@@ -49,8 +49,8 @@ CONDITIONS_DI = {
     (
         "Warsaw",
         True,
-    ): """AND (n_rooms > 3 or (not kitchen_combined_with_living_room))
-        and total_rent_price < 6700
+    ): """AND (n_rooms > 3 or (kitchen_combined_with_living_room is null) or (not kitchen_combined_with_living_room))
+        and total_rent_price < 7500
         and distance_from_center_km < 4.5
         and (allowed_with_pets is null or allowed_with_pets)""",
     (
@@ -61,8 +61,8 @@ CONDITIONS_DI = {
     (
         "Warsaw",
         False,
-    ): """AND (n_rooms > 3 or (not kitchen_combined_with_living_room))
-        and total_rent_price < 6700
+    ): """AND (n_rooms > 3 or (kitchen_combined_with_living_room is null) or (not kitchen_combined_with_living_room))
+        and total_rent_price < 7500
         and distance_from_center_km >= 4.5
         and (allowed_with_pets is null or allowed_with_pets)""",
 }
