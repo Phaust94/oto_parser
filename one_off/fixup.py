@@ -4,7 +4,7 @@ import tqdm
 import typing
 
 from helpers.connection import get_db_connection, get_db_credentials
-from helpers.models import Saveable
+from helpers.models_otodom import Saveable
 
 
 class ListingLocation(Saveable):

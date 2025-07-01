@@ -7,7 +7,7 @@ import google.genai.errors
 import tqdm
 
 from helpers.connection import get_db_connection, get_db_credentials, get_ai_client
-from helpers.models import ListingAIMetadata, ListingAIInfo
+from helpers.models_otodom import ListingAIMetadata, ListingAIInfo
 
 
 def extract_info(listing_id: int, html_content: str, client) -> ListingAIInfo:

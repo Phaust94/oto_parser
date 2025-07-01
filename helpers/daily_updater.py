@@ -1,21 +1,14 @@
 import time
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 import random
-import json
 
-from bs4 import BeautifulSoup
 import tqdm
 
 from helpers.connection import query_url_as_human, CITY
-from helpers.models import ListingItem
+from helpers.models_base import ListingItem
+from helpers.services import Service
 
 __all__ = ["update_listings"]
-
-SEARCH_DICT = {
-    "Warsaw": "https://www.otodom.pl/pl/wyniki/wynajem/mieszkanie/mazowieckie/warszawa/warszawa/warszawa?roomsNumber=%5BTHREE%2CFOUR%2CFIVE%2CSIX_OR_MORE%5D&extras=%5BGARAGE%5D&heating=%5BURBAN%5D&by=LATEST&direction=DESC&viewType=listing&page=2",
-    "Krakow": "https://www.otodom.pl/pl/wyniki/wynajem/mieszkanie/malopolskie/krakow/krakow/krakow?heating=%5BURBAN%5D&by=LATEST&direction=DESC&viewType=listing&page=2&priceMax=2500",
-}
-SEARCH_FIRST_URL = SEARCH_DICT[CITY]
 
 
 def parse_url_parameters(url):
@@ -91,22 +84,11 @@ def update_and_reconstruct_url(url, param_name, new_value):
 PAGES = 36
 
 
-def get_listings(body: dict) -> list:
-    res = body["props"]["pageProps"]["data"]["searchAds"]["items"]
-    return res
-
-
-def scrape_page(search_url: str, page_num: int) -> list[ListingItem]:
-    listing_items = []
+def scrape_page(search_url: str, page_num: int, service: Service) -> list[ListingItem]:
     updated_url = update_and_reconstruct_url(search_url, "page", str(page_num + 1))
     res = query_url_as_human(updated_url)
-    soup = BeautifulSoup(res.text, "html.parser")
-    script = soup.find_all("script")[-1].text
-    body = json.loads(script)
-    listings = get_listings(body)
-    for listing in listings[:-1]:
-        inst = ListingItem.from_otodom_data(listing)
-        listing_items.append(inst)
+    text = res.text
+    listing_items = service.listing_item_model_class.from_text(text)
     return listing_items
 
 
@@ -119,7 +101,6 @@ def scrape(search_url: str, pages: int) -> list[ListingItem]:
 
 
 def save_to_db(cursor, data: list[ListingItem], conn) -> bool:
-
     present = {}
     for item in data:
         is_present = item.is_present_in_db(cursor)
@@ -130,10 +111,10 @@ def save_to_db(cursor, data: list[ListingItem], conn) -> bool:
     return all(present.values())
 
 
-def update_listings(cursor, conn) -> bool:
+def update_listings(cursor, conn, service: Service) -> bool:
     all_present = False
     for i in tqdm.tqdm(range(PAGES)):
-        li_chunk = scrape_page(SEARCH_FIRST_URL, i)
+        li_chunk = scrape_page(service.search_url_dict[CITY], i, service)
         all_present = save_to_db(cursor, li_chunk, conn)
         if all_present:
             break
