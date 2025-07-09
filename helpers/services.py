@@ -40,3 +40,11 @@ class Service(enum.Enum):
             self.OLX: mox.SEARCH_DICT,
         }
         return di[self]
+
+    @property
+    def listing_ai_metadata_model_class(self) -> typing.Type[mb.ListingAIInfo]:
+        di = {
+            self.Otodom: mod.ListingAIInfoOtodom,
+            self.OLX: mox.ListingAIInfoOLX,
+        }
+        return di[self]

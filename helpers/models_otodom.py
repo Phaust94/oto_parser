@@ -7,14 +7,21 @@ import json
 from bs4 import BeautifulSoup
 import pydantic
 
-from helpers.models_base import Saveable, ListingItem, ListingAdditionalInfo
-from helpers.helpers import dist_from_root
+from helpers.models_base import (
+    Saveable,
+    ListingItem,
+    ListingAdditionalInfo,
+    ListingAIInfo,
+    ListingGone,
+    ListingAIMetadata,
+)
+from helpers.helper_functions import dist_from_root
 
 __all__ = [
     "ListingItemOtodom",
     "ListingAdditionalInfoOtodom",
-    "ListingAIMetadata",
-    "ListingAIInfo",
+    "ListingAIMetadataOtodom",
+    "ListingAIInfoOtodom",
     "SEARCH_DICT",
 ]
 
@@ -73,10 +80,9 @@ class ListingItemOtodom(ListingItem):
 
 
 class ListingAdditionalInfoOtodom(ListingAdditionalInfo):
-    floor: int | None
     floors_total: int | None
-    deposit: int | None
     has_ac: bool
+    deposit: int | None
     has_lift: bool
     windows: str | None
     available_from: str | None = pydantic.Field(default=None)
@@ -84,23 +90,21 @@ class ListingAdditionalInfoOtodom(ListingAdditionalInfo):
     latitude: str
     longitude: str
 
-    description_long: str
-
-    raw_info: str
-
     distance_from_center_km: float
 
     TABLE_NAME: typing.ClassVar[str] = "listing_metadata"
 
     @classmethod
     def from_text(
-        cls, text: str, listing_id: int, city: str
+        cls, text: str, listing_id: str, city: str
     ) -> ListingAdditionalInfoOtodom | ListingGone:
+        from services import Service
+
         soup = BeautifulSoup(text, "html.parser")
         script = soup.find_all("script")[-1].text
         info = json.loads(script)
         if info.get("page") == "/pl/wyniki/[[...searchingCriteria]]":
-            res = ListingGone(listing_id=listing_id)
+            res = ListingGone(listing_id=listing_id, service=Service.Otodom.value)
             return res
         ad_info = info["props"]["pageProps"]["ad"]
 
@@ -161,31 +165,20 @@ class ListingAdditionalInfoOtodom(ListingAdditionalInfo):
         return inst
 
 
-class ListingAIMetadata(pydantic.BaseModel):
-    allowed_with_pets: bool | None
-    availability_date: str | None
-    bedroom_number: int | None
-    kitchen_combined_with_living_room: bool | None
-    occasional_lease: bool | None
+class ListingAIMetadataOtodom(ListingAIMetadata):
+    prompt: typing.ClassVar[
+        str
+    ] = """
+    allowed_with_pets: if it is explicitly allowed to live with pets in the apartment
+    availability_date: since when the apartment is available to be leased
+    bedroom_number: the number of bedrooms or rooms that could be used as a bedroom (excluding kitchen)
+    kitchen_combined_with_living_room: whether the kitchen is combined with a living room (true), or is it a separate room
+    occasional_lease: whether the occasional lease agreement (najem okazjonalny) is required
+    """
 
 
-class ListingAIInfo(ListingAIMetadata, Saveable):
-    listing_id: int
-
-    updated_at: datetime.datetime | None
-
+class ListingAIInfoOtodom(ListingAIInfo, ListingAIMetadataOtodom, Saveable):
     TABLE_NAME: typing.ClassVar[str] = "listing_ai_metadata"
-
-    @classmethod
-    def from_ai_metadata(
-        cls, ai_metadata: ListingAIMetadata, listing_id: int
-    ) -> ListingAIInfo:
-        inst = cls(
-            listing_id=listing_id,
-            **ai_metadata.model_dump(mode="python"),
-            updated_at=datetime.datetime.utcnow(),
-        )
-        return inst
 
 
 def get_rooms_number(txt: str | None) -> int | None:

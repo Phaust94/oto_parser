@@ -1,22 +1,33 @@
 from __future__ import annotations
 
-import datetime
 import typing
 import json
+import re
 
 from bs4 import BeautifulSoup
 import pydantic
 
-from helpers.models_base import Saveable, ListingItem
+from helpers.models_base import (
+    Saveable,
+    ListingItem,
+    ListingAIMetadata,
+    ListingAdditionalInfo,
+    ListingAIInfo,
+)
 
 __all__ = [
     "Saveable",
     "ListingItemOLX",
-    "ListingAdditionalInfo",
-    "ListingAIMetadata",
-    "ListingAIInfo",
-    "ListingGone",
+    "ListingAdditionalInfoOLX",
+    "ListingAIMetadataOLX",
+    "ListingAIInfoOLX",
+    "SEARCH_DICT",
 ]
+
+SEARCH_DICT = {
+    "Warsaw": "https://www.olx.pl/nieruchomosci/mieszkania/wynajem/warszawa/?search%5Bfilter_enum_rooms%5D%5B0%5D=three&search%5Bfilter_enum_rooms%5D%5B1%5D=four&search%5Border%5D=created_at%3Adesc",
+    "Krakow": "https://www.olx.pl/nieruchomosci/mieszkania/wynajem/krakow/?search%5Border%5D=created_at:desc&search%5Bfilter_float_price:to%5D=2500",
+}
 
 
 class ListingItemOLX(ListingItem):
@@ -43,8 +54,8 @@ class ListingItemOLX(ListingItem):
     def from_text(cls, text: str) -> list[ListingItemOLX]:
         listing_items = []
         soup = BeautifulSoup(text, "html.parser")
-        ress = soup.find_all("script")
-        for i, elem in enumerate(ress):
+        res = soup.find_all("script")
+        for i, elem in enumerate(res):
             if '"@type":"Product"' not in elem.text:
                 continue
             txt = str(elem.next)
@@ -56,30 +67,49 @@ class ListingItemOLX(ListingItem):
         return listing_items
 
 
+class RegexpInfo(pydantic.BaseModel):
+    regexp: str
+    convertor_func: typing.Callable[[str], typing.Any] = pydantic.Field(
+        default=lambda x: x
+    )
+
+
+def str_to_bool(s: str) -> bool | None:
+    s = s.lower()
+    if s == "tak":
+        return True
+    if s == "nie":
+        return False
+    return None
+
+
 PROPERTY_TO_REGEXP = {
-    "animals":
+    "animals": RegexpInfo(regexp=r"Zwierzęta: (.*)", convertor_func=str_to_bool),
+    "administrative_price": RegexpInfo(
+        regexp=r"Czynsz.*:([0-9 ]+) zł",
+        convertor_func=lambda x: int(x.replace(" ", "")),
+    ),
+    "area_m2": RegexpInfo(regexp=r"Powierzchnia: ([0-9]+) m²", convertor_func=int),
+    "floor": RegexpInfo(regexp=r"Poziom: ([0-9]+)", convertor_func=int),
 }
 
-class ListingAdditionalInfoOLX(Saveable):
-    listing_id: int
+
+class ListingAdditionalInfoOLX(ListingAdditionalInfo):
     administrative_price: float | None = pydantic.Field(default=None)
     area_m2: float | None = pydantic.Field(default=None)
-    floor: int | None
-
-    description_long: str
-
-    raw_info: str
 
     TABLE_NAME: typing.ClassVar[str] = "listing_metadata_olx"
 
     @classmethod
-    def from_text(cls, text: str, listing_id: int) -> ListingAdditionalInfoOLX:
+    def from_text(
+        cls, text: str, listing_id: str, city: str
+    ) -> ListingAdditionalInfoOLX:
         soup = BeautifulSoup(text)
         scripts = soup.find_all("script")
-        for i, eleme in enumerate(scripts):
-            if '"@type":"Product"' not in eleme.text:
+        for elem in scripts:
+            if '"@type":"Product"' not in elem.text:
                 continue
-            txt = str(eleme.next)
+            txt = str(elem.next)
             json_desc = json.loads(txt)
             break
         else:
@@ -88,33 +118,25 @@ class ListingAdditionalInfoOLX(Saveable):
         parameters = soup.find(
             attrs={"data-testid": "ad-parameters-container"}
         ).find_all("p")
-        animals_re = r"Zwierzęta: ([a-zA-Z]+)"
-        animals_allowed = None
+        out = {k: None for k in PROPERTY_TO_REGEXP.keys()}
         for param in parameters:
-            res = re.findall(animals_re, param.text)
-            if res:
-                animals_allowed = res[0] == "Tak"
-        print(animals_allowed)
+            for prop, regexp_info in PROPERTY_TO_REGEXP.items():
+                res = re.findall(regexp_info.regexp, param.text)
+                if not res:
+                    continue
+                res = regexp_info.convertor_func(res[0])
+                out[prop] = res
 
         inst = cls(
             listing_id=listing_id,
             description_long=json_desc["description"],
-            deposit=tg.get("Deposit"),
-            floor=floor,
-            floors_total=floor_total,
-            has_ac="air_conditioning" in extras,
-            has_lift="lift" in extras,
-            windows=windows,
-            latitude=str(lat),
-            longitude=str(lon),
-            available_from=available_from,
+            **out,
             raw_info=text,
-            distance_from_center_km=dist,
         )
         return inst
 
 
-class ListingAIMetadata(pydantic.BaseModel):
+class ListingAIMetadataOLX(ListingAIMetadata):
     administrative_price: float | None = pydantic.Field(default=None)
     allowed_with_pets: bool | None
     availability_date: str | None
@@ -122,21 +144,16 @@ class ListingAIMetadata(pydantic.BaseModel):
     kitchen_combined_with_living_room: bool | None
     occasional_lease: bool | None
 
+    prompt: typing.ClassVar[
+        str
+    ] = """
+    allowed_with_pets: if it is explicitly allowed to live with pets in the apartment
+    availability_date: since when the apartment is available to be leased
+    bedroom_number: the number of bedrooms or rooms that could be used as a bedroom (excluding kitchen)
+    kitchen_combined_with_living_room: whether the kitchen is combined with a living room (true), or is it a separate room
+    occasional_lease: whether the occasional lease agreement (najem okazjonalny) is required
+    """
 
-class ListingAIInfo(ListingAIMetadata, Saveable):
-    listing_id: int
 
-    updated_at: datetime.datetime | None
-
-    TABLE_NAME: typing.ClassVar[str] = "listing_ai_metadata"
-
-    @classmethod
-    def from_ai_metadata(
-        cls, ai_metadata: ListingAIMetadata, listing_id: int
-    ) -> ListingAIInfo:
-        inst = cls(
-            listing_id=listing_id,
-            **ai_metadata.model_dump(mode="python"),
-            updated_at=datetime.datetime.utcnow(),
-        )
-        return inst
+class ListingAIInfoOLX(ListingAIInfo, ListingAIMetadataOLX, Saveable):
+    TABLE_NAME: typing.ClassVar[str] = "listing_ai_metadata_olx"

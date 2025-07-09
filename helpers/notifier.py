@@ -10,6 +10,8 @@ __all__ = [
     "send_status_update_alive",
 ]
 
+from helpers.models_base import Service
+
 COLUMN_NAMES = [
     "listing_id",
     "title",
@@ -69,7 +71,7 @@ CONDITIONS_DI = {
 
 
 def get_to_notify(
-    new_listing_ids: list[int], cursor, include_distance: True
+    new_listing_ids: list[str], cursor, include_distance: True
 ) -> list[dict]:
     placeholders = ",".join("%s" for _ in range(len(new_listing_ids)))
     column_names_list = ",\n".join(COLUMN_NAMES)
@@ -135,7 +137,7 @@ def format_msg(di: dict) -> str:
     return res
 
 
-def send_updates(info: list[tuple[int, str]], cursor, tg_info) -> None:
+def send_updates(info: list[tuple[str, str]], cursor, tg_info) -> None:
     if not info:
         return None
 
@@ -155,18 +157,18 @@ def send_updates(info: list[tuple[int, str]], cursor, tg_info) -> None:
     return None
 
 
-def format_status_msg(info: list[tuple[int, str]]) -> str:
+def format_status_msg(info: list[tuple[str, str]], service: Service) -> str:
     res = textwrap.dedent(
         """\
-    Done updating from Otodom for {city}!
+    Done updating from {service} for {city}!
     Parsed ads: {n_ads}\
     """
-    ).format(n_ads=len(info), city=CITY)
+    ).format(n_ads=len(info), city=CITY, service=service.name)
     return res
 
 
-def send_status_update(info: list[tuple[int, str]], tg_info) -> None:
-    msg = format_status_msg(info)
+def send_status_update(info: list[tuple[str, str]], tg_info, service) -> None:
+    msg = format_status_msg(info, service)
     send_telegram_message(
         **tg_info, message=msg, thread=tg_info["update_status_thread"]
     )

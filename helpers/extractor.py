@@ -36,7 +36,7 @@ def extract_info(
     listing_id: str, html_content: str | None, service: Service
 ) -> ListingAdditionalInfo | ListingGone:
     if html_content is None:
-        res = ListingGone(listing_id=listing_id)
+        res = ListingGone(listing_id=listing_id, service=service.value)
         return res
     metadata = service.listing_metadata_model_class.from_text(
         text=html_content,
@@ -47,19 +47,13 @@ def extract_info(
 
 
 def extract_ai_info(
-    listing_id: int,
-    html_content: str,
-    client,
+    listing_id: str, html_content: str, client, service: Service
 ) -> ListingAIInfo:
 
     message = f"""
     Based on the following description, find the following information. 
     If any of the pieces are missing  - return null for that piece.
-    allowed_with_pets: if it is explicitly allowed to live with pets in the apartment
-    availability_date: since when the apartment is available to be leased
-    bedroom_number: the number of bedrooms or rooms that could be used as a bedroom (excluding kitchen)
-    kitchen_combined_with_living_room: whether the kitchen is combined with a living room (true), or is it a separate room
-    occasional_lease: whether the occasional lease agreement (najem okazjonalny) is required
+    {service.listing_ai_metadata_model_class.prompt}
     Description:
     {html_content}
     """
@@ -106,8 +100,8 @@ def get_slugs(cursor, service: Service) -> list[tuple[str, str]]:
     return results
 
 
-def get_slugs_no_ai(cursor) -> list[tuple[int, str, str]]:
-    query = """
+def get_slugs_no_ai(cursor, service: Service) -> list[tuple[str, str, str]]:
+    query = f"""
     with urls as (
         select listing_id, min(url) as url
         from listing_info_full
@@ -115,6 +109,7 @@ def get_slugs_no_ai(cursor) -> list[tuple[int, str, str]]:
         and scraped
         and not irrelevant
         and parsed_on is null
+        and service = '{service.value}'
         group by listing_id 
         order by listing_id 
     )
@@ -131,12 +126,13 @@ def get_slugs_no_ai(cursor) -> list[tuple[int, str, str]]:
     return results
 
 
-def get_slugs_alive(cursor) -> list[tuple[int, str]]:
-    query = """
+def get_slugs_alive(cursor, service: Service) -> list[tuple[int, str]]:
+    query = f"""
     select listing_id, min(url) as url 
     from listing_info_full
     where 1=1
     and not irrelevant
+    and service = '{service.value}'
     group by listing_id 
     order by listing_id 
     """
@@ -155,7 +151,7 @@ def get_html_url(url: str) -> str | None:
 
 def process_missing_metadata(
     cursor, conn, ai_client, service: Service
-) -> list[tuple[int, str]]:
+) -> list[tuple[str, str]]:
     urls = get_slugs(cursor, service)
     for listing_id, url in tqdm.tqdm(urls):
         body = get_html_url(url)
@@ -163,7 +159,7 @@ def process_missing_metadata(
         metadata.to_db(cursor)
         conn.commit()
         if not isinstance(metadata, ListingGone):
-            ai_info = extract_ai_info(listing_id, metadata.raw_info, ai_client)
+            ai_info = extract_ai_info(listing_id, metadata.raw_info, ai_client, service)
             ai_info.to_db(conn.cursor())
             conn.commit()
         time.sleep(random.randint(0, 1000) / 1000)
@@ -173,10 +169,10 @@ def process_missing_metadata(
 
 def process_missing_ai_metadata(
     cursor, conn, ai_client, service: Service
-) -> list[tuple[int, str]]:
-    urls = get_slugs_no_ai(cursor)
+) -> list[tuple[str, str]]:
+    urls = get_slugs_no_ai(cursor, service)
     for listing_id, url, raw_info in tqdm.tqdm(urls):
-        ai_info = extract_ai_info(listing_id, raw_info, ai_client)
+        ai_info = extract_ai_info(listing_id, raw_info, ai_client, service)
         ai_info.to_db(conn.cursor())
         conn.commit()
         time.sleep(random.randint(0, 1000) / 1000)
@@ -185,7 +181,7 @@ def process_missing_ai_metadata(
 
 
 def check_alive(cursor, conn, service: Service) -> tuple[list[int], list[int]]:
-    urls = get_slugs_alive(cursor)
+    urls = get_slugs_alive(cursor, service)
     alive, dead = [], []
     for listing_id, url in tqdm.tqdm(urls):
         body = get_html_url(url)

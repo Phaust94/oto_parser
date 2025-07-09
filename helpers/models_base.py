@@ -138,21 +138,8 @@ class ListingItem(Saveable, abc.ABC):
 class ListingAdditionalInfo(Saveable):
     listing_id: str
     floor: int | None
-    floors_total: int | None
-    deposit: int | None
-    has_ac: bool
-    has_lift: bool
-    windows: str | None
-    available_from: str | None = pydantic.Field(default=None)
-
-    latitude: str
-    longitude: str
-
     description_long: str
-
     raw_info: str
-
-    distance_from_center_km: float
 
     TABLE_NAME: typing.ClassVar[str] = NotImplemented
 
@@ -168,8 +155,10 @@ class ListingAIMetadata(pydantic.BaseModel):
     kitchen_combined_with_living_room: bool | None
     occasional_lease: bool | None
 
+    prompt: typing.ClassVar[str] = NotImplemented
 
-class ListingAIInfo(ListingAIMetadata, Saveable):
+
+class ListingAIInfo(ListingAIMetadata, Saveable, abc.ABC):
     listing_id: str
 
     updated_at: datetime.datetime | None

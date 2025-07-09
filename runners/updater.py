@@ -27,9 +27,9 @@ def main_single_service(
         if metadata_update_only_ai_switch
         else process_missing_metadata
     )
-    new_listing_info = md_func(cursor, conn, ai_client)
+    new_listing_info = md_func(cursor, conn, ai_client, service)
     send_updates(new_listing_info, cursor, tg_info)
-    send_status_update(new_listing_info, tg_info)
+    send_status_update(new_listing_info, tg_info, service)
     return None
 
 
