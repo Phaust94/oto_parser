@@ -14,6 +14,7 @@ from helpers.models_base import (
     ListingAdditionalInfo,
     ListingAIInfo,
 )
+from helpers.helper_functions import dist_from_root
 
 __all__ = [
     "Saveable",
@@ -46,7 +47,6 @@ class ListingItemOLX(ListingItem):
             slug=slug,
             rent_price=rent_price,
             district=district,
-            district_specific=district,
         )
         return inst
 
@@ -84,17 +84,22 @@ def str_to_bool(s: str) -> bool | None:
 
 
 PROPERTY_TO_REGEXP = {
-    "animals": RegexpInfo(regexp=r"Zwierzęta: (.*)", convertor_func=str_to_bool),
+    "allowed_with_pets": RegexpInfo(
+        regexp=r"Zwierzęta: (.*)", convertor_func=str_to_bool
+    ),
     "administrative_price": RegexpInfo(
         regexp=r"Czynsz.*:([0-9 ]+) zł",
         convertor_func=lambda x: int(x.replace(" ", "")),
     ),
     "area_m2": RegexpInfo(regexp=r"Powierzchnia: ([0-9]+) m²", convertor_func=int),
     "floor": RegexpInfo(regexp=r"Poziom: ([0-9]+)", convertor_func=int),
+    "n_rooms": RegexpInfo(regexp=r"Liczba pokoi: ([0-9]+)", convertor_func=int),
 }
 
 
 class ListingAdditionalInfoOLX(ListingAdditionalInfo):
+    allowed_with_pets: bool | None = pydantic.Field(default=None)
+    n_rooms: int | None = pydantic.Field(default=None)
     administrative_price: float | None = pydantic.Field(default=None)
     area_m2: float | None = pydantic.Field(default=None)
 
@@ -137,12 +142,18 @@ class ListingAdditionalInfoOLX(ListingAdditionalInfo):
 
 
 class ListingAIMetadataOLX(ListingAIMetadata):
-    administrative_price: float | None = pydantic.Field(default=None)
     allowed_with_pets: bool | None
     availability_date: str | None
     bedroom_number: int | None
     kitchen_combined_with_living_room: bool | None
     occasional_lease: bool | None
+    deposit: int | None
+    has_ac: bool | None
+    has_lift: bool | None
+    street: str | None
+    street_number: str | None
+    latitude: str | None
+    longitude: str | None
 
     prompt: typing.ClassVar[
         str
@@ -152,8 +163,24 @@ class ListingAIMetadataOLX(ListingAIMetadata):
     bedroom_number: the number of bedrooms or rooms that could be used as a bedroom (excluding kitchen)
     kitchen_combined_with_living_room: whether the kitchen is combined with a living room (true), or is it a separate room
     occasional_lease: whether the occasional lease agreement (najem okazjonalny) is required
+    deposit: what is the amount of deposit (kaucja) that is required
+    has_ac: whether the apartment is air-conditioned (klimatyzowane)
+    has_lift: whether there is a lift (winda) in the apartment
+    street: what street the apartment is located on (przy jakiej ulicy). Put just street name, not building number
+    street_number: what is the number of the building on the street that the apartment is situated on. Put a single number, without address
+    latitude: what is the geographical latitude of building where the apartment is located, according to it's street address. If the text specifies street name only, without building number - then assume it's building number 1 on that street.
+    longitude: what is the geographical longitude of building where the apartment is located, according to it's street address. If the text specifies street name only, without building number - then assume it's building number 1 on that street.
     """
 
 
 class ListingAIInfoOLX(ListingAIInfo, ListingAIMetadataOLX, Saveable):
     TABLE_NAME: typing.ClassVar[str] = "listing_ai_metadata_olx"
+
+    distance_from_center_km: float | None = pydantic.Field(default=None)
+
+    # noinspection PyUnusedLocal,PyMethodMayBeStatic
+    def augment(self, city: str) -> None:
+        lat, lon = self.latitude, self.longitude
+        dist = dist_from_root(city, lat, lon)
+        self.distance_from_center_km = dist
+        return None

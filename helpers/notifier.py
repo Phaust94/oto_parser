@@ -175,21 +175,23 @@ def send_status_update(info: list[tuple[str, str]], tg_info, service) -> None:
     return None
 
 
-def format_status_msg_alive(alive: list[int], dead: list[int]) -> str:
+def format_status_msg_alive(alive: list[str], dead: list[str], service: Service) -> str:
     res = textwrap.dedent(
         """\
-    Done live-checking from Otodom for {city}!
+    Done live-checking from {service} for {city}!
     Still alive ads: {n_alive}
     Dead ads: {n_dead}.\
     """.format(
-            n_alive=len(alive), n_dead=len(dead), city=CITY
+            n_alive=len(alive), n_dead=len(dead), city=CITY, service=service.value
         )
     )
     return res
 
 
-def send_status_update_alive(alive: list[int], dead: list[int], tg_info) -> None:
-    msg = format_status_msg_alive(alive, dead)
+def send_status_update_alive(
+    alive: list[str], dead: list[str], tg_info, service: Service
+) -> None:
+    msg = format_status_msg_alive(alive, dead, service=service)
     send_telegram_message(
         **tg_info, message=msg, thread=tg_info["update_status_thread"]
     )

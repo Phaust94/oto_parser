@@ -126,7 +126,7 @@ def get_slugs_no_ai(cursor, service: Service) -> list[tuple[str, str, str]]:
     return results
 
 
-def get_slugs_alive(cursor, service: Service) -> list[tuple[int, str]]:
+def get_slugs_alive(cursor, service: Service) -> list[tuple[str, str]]:
     query = f"""
     select listing_id, min(url) as url 
     from listing_info_full
@@ -180,13 +180,13 @@ def process_missing_ai_metadata(
     return urls_fixed
 
 
-def check_alive(cursor, conn, service: Service) -> tuple[list[int], list[int]]:
+def check_alive(cursor, conn, service: Service) -> tuple[list[str], list[str]]:
     urls = get_slugs_alive(cursor, service)
     alive, dead = [], []
     for listing_id, url in tqdm.tqdm(urls):
         body = get_html_url(url)
         if body is None:
-            metadata = ListingGone(listing_id=listing_id)
+            metadata = ListingGone(listing_id=listing_id, service=service.value)
             metadata.to_db(cursor)
             conn.commit()
             dead.append(listing_id)

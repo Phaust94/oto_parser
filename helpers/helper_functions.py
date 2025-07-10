@@ -35,6 +35,8 @@ def haversine(lat1, lon1, lat2, lon2):
     return distance
 
 
-def dist_from_root(city: str, lat: float, lon: float):
+def dist_from_root(city: str, lat: float | None, lon: float | None):
     root = ROOT_DICT[city]
+    lat = lat or root[0]
+    lon = lon or root[1]
     return haversine(*root, lat, lon)

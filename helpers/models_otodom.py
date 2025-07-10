@@ -31,11 +31,15 @@ class ListingItemOtodom(ListingItem):
 
     administrative_price: float | None = pydantic.Field(default=None)
 
+    district_specific: str | None = pydantic.Field(default=None)
+
     area_m2: float | None = pydantic.Field(default=None)
     n_rooms: int | None = pydantic.Field(default=None)
 
     street: str | None = pydantic.Field(default=None)
     street_number: str | None = pydantic.Field(default=None)
+
+    created_on: datetime.datetime | None = pydantic.Field(default=None)
 
     TABLE_NAME: typing.ClassVar[str] = "listing_items"
 

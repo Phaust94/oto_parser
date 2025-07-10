@@ -124,9 +124,6 @@ class ListingItem(Saveable, abc.ABC):
     rent_price: float | None = pydantic.Field(default=None)
 
     district: str | None = pydantic.Field(default=None)
-    district_specific: str | None = pydantic.Field(default=None)
-
-    created_on: datetime.datetime | None = pydantic.Field(default=None)
 
     TABLE_NAME: typing.ClassVar[str] = NotImplemented
 
@@ -165,15 +162,23 @@ class ListingAIInfo(ListingAIMetadata, Saveable, abc.ABC):
 
     TABLE_NAME: typing.ClassVar[str] = NotImplemented
 
+    # noinspection PyUnusedLocal,PyMethodMayBeStatic
+    def augment(self, city: str) -> None:
+        return None
+
     @classmethod
     def from_ai_metadata(
-        cls, ai_metadata: ListingAIMetadata, listing_id: str
+        cls,
+        ai_metadata: ListingAIMetadata,
+        listing_id: str,
+        city: str,
     ) -> ListingAIInfo:
         inst = cls(
             listing_id=listing_id,
             **ai_metadata.model_dump(mode="python"),
             updated_at=datetime.datetime.utcnow(),
         )
+        inst.augment(city=city)
         return inst
 
 
