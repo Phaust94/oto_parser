@@ -6,7 +6,9 @@ import re
 
 from bs4 import BeautifulSoup
 import pydantic
+from geopy.geocoders import Nominatim
 
+from helpers.connection import NOMINATIM_AGENT
 from helpers.models_base import (
     Saveable,
     ListingItem,
@@ -131,6 +133,7 @@ class ListingAdditionalInfoOLX(ListingAdditionalInfo):
                     continue
                 res = regexp_info.convertor_func(res[0])
                 out[prop] = res
+                break
 
         inst = cls(
             listing_id=listing_id,
@@ -152,8 +155,6 @@ class ListingAIMetadataOLX(ListingAIMetadata):
     has_lift: bool | None
     street: str | None
     street_number: str | None
-    latitude: str | None
-    longitude: str | None
 
     prompt: typing.ClassVar[
         str
@@ -166,20 +167,46 @@ class ListingAIMetadataOLX(ListingAIMetadata):
     deposit: what is the amount of deposit (kaucja) that is required
     has_ac: whether the apartment is air-conditioned (klimatyzowane)
     has_lift: whether there is a lift (winda) in the apartment
-    street: what street the apartment is located on (przy jakiej ulicy). Put just street name, not building number
+    street: what street the apartment is located on (przy jakiej ulicy). Put just street name, not building number. Remove any prefixes like ul. or similar
     street_number: what is the number of the building on the street that the apartment is situated on. Put a single number, without address
-    latitude: what is the geographical latitude of building where the apartment is located, according to it's street address. If the text specifies street name only, without building number - then assume it's building number 1 on that street.
-    longitude: what is the geographical longitude of building where the apartment is located, according to it's street address. If the text specifies street name only, without building number - then assume it's building number 1 on that street.
     """
+
+
+CITY_TO_LOCAL_NAME = {
+    "Warsaw": "Warszawa",
+    "Krakow": "Kraków",
+}
 
 
 class ListingAIInfoOLX(ListingAIInfo, ListingAIMetadataOLX, Saveable):
     TABLE_NAME: typing.ClassVar[str] = "listing_ai_metadata_olx"
 
+    latitude: str | None = pydantic.Field(default=None)
+    longitude: str | None = pydantic.Field(default=None)
     distance_from_center_km: float | None = pydantic.Field(default=None)
+
+    @property
+    def locator(self) -> Nominatim:
+        geolocator = Nominatim(user_agent=NOMINATIM_AGENT)
+        return geolocator
+
+    def get_lat_lon(self, city: str) -> None:
+        if self.street is None:
+            return None
+        city_localized = CITY_TO_LOCAL_NAME[city]
+        address = f"{self.street} {self.street_number or 1}, {city_localized}, Poland"
+
+        # Use geopy to geocode the address
+        location = self.locator.geocode(address)
+        if location is None:
+            return None
+        self.latitude = location.latitude
+        self.longitude = location.longitude
+        return None
 
     # noinspection PyUnusedLocal,PyMethodMayBeStatic
     def augment(self, city: str) -> None:
+        self.get_lat_lon(city)
         lat, lon = self.latitude, self.longitude
         dist = dist_from_root(city, lat, lon)
         self.distance_from_center_km = dist

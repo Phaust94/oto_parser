@@ -6,7 +6,6 @@ import tqdm
 from helpers.connection import query_url_as_human, CITY
 from helpers.models_base import (
     ListingAdditionalInfo,
-    ListingAIMetadata,
     ListingAIInfo,
     ListingGone,
 )
@@ -47,7 +46,10 @@ def extract_info(
 
 
 def extract_ai_info(
-    listing_id: str, html_content: str, client, service: Service
+    listing_id: str,
+    html_content: str,
+    client,
+    service: Service,
 ) -> ListingAIInfo:
 
     message = f"""
@@ -64,7 +66,7 @@ def extract_ai_info(
         contents=message,
         config={
             "response_mime_type": "application/json",
-            "response_schema": ListingAIMetadata,
+            "response_schema": service.listing_ai_metadata_schema_class,
         },
     )
 
@@ -79,7 +81,9 @@ def extract_ai_info(
         time.sleep(delay)
         response = client.models.generate_content(**ai_data)
     inst = response.parsed
-    ai_info = ListingAIInfo.from_ai_metadata(inst, listing_id=listing_id)
+    ai_info = service.listing_ai_metadata_model_class.from_ai_metadata(
+        inst, listing_id=listing_id, city=CITY
+    )
     return ai_info
 
 
@@ -115,7 +119,7 @@ def get_slugs_no_ai(cursor, service: Service) -> list[tuple[str, str, str]]:
     )
     select 
         urls.*,
-        listing_metadata.raw_info
+        listing_metadata.{service.info_for_ai}
     from urls
     inner join listing_metadata
     on (urls.listing_id = listing_metadata.listing_id)
@@ -159,7 +163,8 @@ def process_missing_metadata(
         metadata.to_db(cursor)
         conn.commit()
         if not isinstance(metadata, ListingGone):
-            ai_info = extract_ai_info(listing_id, metadata.raw_info, ai_client, service)
+            text_for_ai = getattr(metadata, service.info_for_ai)
+            ai_info = extract_ai_info(listing_id, text_for_ai, ai_client, service)
             ai_info.to_db(conn.cursor())
             conn.commit()
         time.sleep(random.randint(0, 1000) / 1000)

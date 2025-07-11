@@ -17,6 +17,7 @@ __all__ = [
     "get_tg_info",
     "CITY",
     "DATABASE",
+    "NOMINATIM_AGENT",
 ]
 
 load_dotenv()
@@ -102,3 +103,5 @@ DB_DI = {
     "Krakow": "otodom_krakow",
 }
 DATABASE = DB_DI[CITY]
+
+NOMINATIM_AGENT = os.environ.get("NOMINATIM_AGENT", "dummy123")

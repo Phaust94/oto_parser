@@ -144,6 +144,10 @@ class ListingAdditionalInfo(Saveable):
     def from_text(cls, text: str, listing_id: str, city: str) -> ListingAdditionalInfo:
         raise NotImplementedError()
 
+    @property
+    def info_for_ai(self) -> str:
+        raise NotImplementedError()
+
 
 class ListingAIMetadata(pydantic.BaseModel):
     allowed_with_pets: bool | None

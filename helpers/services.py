@@ -34,7 +34,8 @@ class Service(enum.Enum):
         }
         return di[self]
 
-    def search_url_dict(self, city: str) -> str:
+    @property
+    def search_url_dict(self) -> str:
         di = {
             self.Otodom: mod.SEARCH_DICT,
             self.OLX: mox.SEARCH_DICT,
@@ -46,5 +47,21 @@ class Service(enum.Enum):
         di = {
             self.Otodom: mod.ListingAIInfoOtodom,
             self.OLX: mox.ListingAIInfoOLX,
+        }
+        return di[self]
+
+    @property
+    def listing_ai_metadata_schema_class(self) -> typing.Type[mb.ListingAIMetadata]:
+        di = {
+            self.Otodom: mod.ListingAIMetadataOtodom,
+            self.OLX: mox.ListingAIMetadataOLX,
+        }
+        return di[self]
+
+    @property
+    def info_for_ai(self) -> str:
+        di = {
+            self.Otodom: "raw_info",
+            self.OLX: "description_long",
         }
         return di[self]

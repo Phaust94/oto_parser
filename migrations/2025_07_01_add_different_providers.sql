@@ -1,5 +1,3 @@
--- add column service
-
 create table otodom.listing_items_2 (
   `listing_id` varchar(100) NOT NULL,
   `title` varchar(255) NOT NULL,
@@ -55,7 +53,11 @@ modify listing_id varchar(100)
 ;
 
 alter table otodom.irrelevant_listings
-add column service varchar(20) default 'otodoom'
+add column service varchar(20) default 'otodom'
+;
+
+alter table otodom.decisions
+add column service varchar(20) default 'otooom'
 ;
 
 CREATE TABLE otodom.listing_items_olx (
@@ -145,7 +147,6 @@ with otodom_full as (
     on (a.listing_id = b.listing_id)
     left join otodom.listing_ai_metadata as c
     on (a.listing_id = c.listing_id)
-
 )
 , olx_full as (
     select
@@ -196,7 +197,7 @@ with otodom_full as (
 )
 , added_decisions as (
     select
-        combined.*,
+        a.*,
         (case
             when (`f`.`listing_id` is not null) then true
             else false
@@ -208,6 +209,7 @@ with otodom_full as (
     left join otodom.irrelevant_listings as f
     on (a.listing_id = f.listing_id and a.service = f.service)
 )
+select *
 from added_decisions
 ;
 

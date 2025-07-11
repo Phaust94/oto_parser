@@ -42,7 +42,7 @@ def extract_info(listing_id: int, html_content: str, client) -> ListingAIInfo:
             raise
         response = client.models.generate_content(**ai_data)
     inst = response.parsed
-    ai_info = ListingAIInfo.from_ai_metadata(inst, listing_id=listing_id)
+    ai_info = ListingAIInfo.from_ai_metadata(inst, listing_id=listing_id, city=CITY)
     return ai_info
 
 

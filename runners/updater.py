@@ -1,3 +1,5 @@
+import typing
+
 from helpers.connection import (
     get_db_connection,
     get_db_credentials,
@@ -34,15 +36,18 @@ def main_single_service(
 
 
 def main(
-    update_listings_switch: bool = True, metadata_update_only_ai_switch: bool = False
+    update_listings_switch: bool = True,
+    metadata_update_only_ai_switch: bool = False,
+    services_to_update: typing.Iterable[Service] = None,
 ):
     db_creds = get_db_credentials()
     conn = get_db_connection(*db_creds)
     cursor = conn.cursor()
     ai_client = get_ai_client()
     tg_info = get_tg_info()
+    services_to_update = services_to_update or Service
 
-    for service in Service:
+    for service in services_to_update:
         main_single_service(
             update_listings_switch,
             metadata_update_only_ai_switch,
