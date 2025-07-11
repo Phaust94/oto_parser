@@ -17,6 +17,8 @@ from helpers.models_base import (
     ListingAIInfo,
 )
 from helpers.helper_functions import dist_from_root
+from helpers.connection import query_url_as_human, CITY
+from helpers.olx_graphql import OLX_QUERY, SEARCH_PARAMS
 
 __all__ = [
     "Saveable",
@@ -24,48 +26,29 @@ __all__ = [
     "ListingAdditionalInfoOLX",
     "ListingAIMetadataOLX",
     "ListingAIInfoOLX",
-    "SEARCH_DICT",
+    "get_page",
 ]
-
-SEARCH_DICT = {
-    "Warsaw": "https://www.olx.pl/nieruchomosci/mieszkania/wynajem/warszawa/?search%5Bfilter_enum_rooms%5D%5B0%5D=three&search%5Bfilter_enum_rooms%5D%5B1%5D=four&search%5Border%5D=created_at%3Adesc",
-    "Krakow": "https://www.olx.pl/nieruchomosci/mieszkania/wynajem/krakow/?search%5Border%5D=created_at:desc&search%5Bfilter_float_price:to%5D=2500",
-}
 
 
 class ListingItemOLX(ListingItem):
     TABLE_NAME: typing.ClassVar[str] = "listing_items_olx"
 
     @classmethod
-    def parse_site_data(cls, offer: dict) -> ListingItemOLX:
-        offer_id = "-".join(offer["url"].split("-")[-2:]).split(".")[0]
-        slug = offer["url"].split("/")[-1].split(".")[0]
-        title = offer["name"]
-        rent_price = offer["price"]
-        district = offer.get("areaServed", {}).get("name")
-        inst = cls(
-            listing_id=offer_id,
-            title=title,
-            slug=slug,
-            rent_price=rent_price,
-            district=district,
-        )
-        return inst
+    def from_jo_single(cls, obj: dict) -> ListingItemOLX:
+        # TODO: fixme
+        return ListingItemOLX()
 
     @classmethod
     def from_text(cls, text: str) -> list[ListingItemOLX]:
         listing_items = []
-        soup = BeautifulSoup(text, "html.parser")
-        res = soup.find_all("script")
-        for i, elem in enumerate(res):
-            if '"@type":"Product"' not in elem.text:
+        jo = json.loads(text)
+        res = jo["data"]["clientCompatibleListings"]["data"]
+        for offer in res:
+            if offer["external_url"] is not None:
                 continue
-            txt = str(elem.next)
-            data = json.loads(txt)
-            offers = data["offers"]["offers"]
-            for offer in offers:
-                item = cls.parse_site_data(offer)
-                listing_items.append(item)
+            inst = cls.from_text(offer)
+            listing_items.append(inst)
+
         return listing_items
 
 
@@ -130,7 +113,7 @@ class ListingAdditionalInfoOLX(ListingAdditionalInfo):
     def from_text(
         cls, text: str, listing_id: str, city: str
     ) -> ListingAdditionalInfoOLX:
-        soup = BeautifulSoup(text)
+        soup = BeautifulSoup(text, "html.parser")
         scripts = soup.find_all("script")
         for elem in scripts:
             if '"@type":"Product"' not in elem.text:
@@ -207,14 +190,35 @@ class ListingAIInfoOLX(ListingAIInfo, ListingAIMetadataOLX, Saveable):
         location = self.locator.geocode(address)
         if location is None:
             return None
-        self.latitude = location.latitude
-        self.longitude = location.longitude
+        self.latitude = str(location.latitude)
+        self.longitude = str(location.longitude)
         return None
 
     # noinspection PyUnusedLocal,PyMethodMayBeStatic
     def augment(self, city: str) -> None:
         self.get_lat_lon(city)
-        lat, lon = self.latitude, self.longitude
+        lat, lon = float(self.latitude), float(self.longitude)
         dist = dist_from_root(city, lat, lon)
         self.distance_from_center_km = dist
         return None
+
+
+BASE_URL = "https://www.olx.pl/apigateway/graphql"
+
+LIMIT = 40
+
+
+def get_page(page_num: int) -> str:
+    search_params_current = SEARCH_PARAMS.copy()
+    search_params_current.append({"key": "limit", "value": str(LIMIT)})
+    search_params_current.append({"key": "offset", "value": str(page_num * LIMIT)})
+    params = {
+        "query": OLX_QUERY,
+        "variables": {
+            "searchParameters": SEARCH_PARAMS,
+        },
+    }
+
+    res = query_url_as_human(url=BASE_URL, method="POST", body=params)
+    text = res.text
+    return text

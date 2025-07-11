@@ -35,10 +35,10 @@ class Service(enum.Enum):
         return di[self]
 
     @property
-    def search_url_dict(self) -> str:
+    def get_page_function(self) -> typing.Callable[[int], str]:
         di = {
-            self.Otodom: mod.SEARCH_DICT,
-            self.OLX: mox.SEARCH_DICT,
+            self.Otodom: mod.get_page,
+            self.OLX: mox.get_page,
         }
         return di[self]
 

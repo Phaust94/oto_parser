@@ -6,6 +6,7 @@ import json
 
 from bs4 import BeautifulSoup
 import pydantic
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 from helpers.models_base import (
     Saveable,
@@ -16,6 +17,7 @@ from helpers.models_base import (
     ListingAIMetadata,
 )
 from helpers.helper_functions import dist_from_root
+from helpers.connection import query_url_as_human, CITY
 
 __all__ = [
     "ListingItemOtodom",
@@ -221,3 +223,56 @@ SEARCH_DICT = {
     "Warsaw": "https://www.otodom.pl/pl/wyniki/wynajem/mieszkanie/mazowieckie/warszawa/warszawa/warszawa?roomsNumber=%5BTHREE%2CFOUR%2CFIVE%2CSIX_OR_MORE%5D&extras=%5BGARAGE%5D&heating=%5BURBAN%5D&by=LATEST&direction=DESC&viewType=listing&page=2",
     "Krakow": "https://www.otodom.pl/pl/wyniki/wynajem/mieszkanie/malopolskie/krakow/krakow/krakow?heating=%5BURBAN%5D&by=LATEST&direction=DESC&viewType=listing&page=2&priceMax=2500",
 }
+SEARCH_URL = SEARCH_DICT[CITY]
+
+
+def update_and_reconstruct_url(url, param_name, new_value):
+    """
+    Updates a specific parameter in a URL and reconstructs the URL.
+
+    Args:
+        url (str): The original URL string.
+        param_name (str): The name of the parameter to update.
+        new_value (str or list): The new value(s) for the parameter.
+
+    Returns:
+        str: The reconstructed URL with the updated parameter.
+    """
+    # Parse the original URL
+    parsed_url = urlparse(url)
+
+    # Get the existing parameters as a dictionary
+    parameters = parse_qs(parsed_url.query)
+
+    # Update the specific parameter
+    # parse_qs returns lists, so we should set the new value as a list too
+    if isinstance(new_value, list):
+        parameters[param_name] = new_value
+    else:
+        parameters[param_name] = [new_value]  # Ensure it's a list
+
+    # Encode the updated parameters back into a query string
+    # quote_via=quote_plus handles spaces as '+'
+    updated_query_string = urlencode(parameters, doseq=True)
+
+    # Reconstruct the URL with the updated query string
+    # urlunparse takes a tuple: (scheme, netloc, path, params, query, fragment)
+    reconstructed_url = urlunparse(
+        (
+            parsed_url.scheme,
+            parsed_url.netloc,
+            parsed_url.path,
+            parsed_url.params,
+            updated_query_string,
+            parsed_url.fragment,
+        )
+    )
+
+    return reconstructed_url
+
+
+def get_page(page_num: int) -> str:
+    updated_url = update_and_reconstruct_url(SEARCH_URL, "page", str(page_num + 1))
+    res = query_url_as_human(updated_url)
+    text = res.text
+    return text

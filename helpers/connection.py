@@ -51,17 +51,7 @@ def get_random_user_agent() -> str:
     return ua_generator.generate().text
 
 
-def query_url_as_human(url):
-    """
-    Queries a URL using a fake user agent to mimic a human user.
-
-    Args:
-        url (str): The URL to query.
-
-    Returns:
-        requests.Response or None: The response object if the request was successful,
-                                   None otherwise.
-    """
+def query_url_as_human(url, method: str = "GET", body: dict = None):
     # Define headers to mimic a browser
     headers = {
         "User-Agent": get_random_user_agent(),  # Use a random user agent
@@ -71,8 +61,16 @@ def query_url_as_human(url):
         "Upgrade-Insecure-Requests": "1",
     }
 
+    to_pass = {
+        "method": method,
+        "url": url,
+        "headers": headers,
+    }
+    if method == "POST":
+        to_pass["json"] = body
+
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.request(**to_pass)
         response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
         return response
     except requests.exceptions.RequestException as e:
