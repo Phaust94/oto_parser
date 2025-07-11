@@ -105,5 +105,5 @@ DATABASE = DB_DI[CITY]
 
 NOMINATIM_AGENT = os.environ.get("NOMINATIM_AGENT", "dummy123")
 
-CITY_DATASOURCES = {"Warsaw": ["otodom", "olx"], "Krakow": ["otodom"]}
+CITY_DATASOURCES = {"Warsaw": ["otodom"], "Krakow": ["otodom"]}
 CURRENT_DATASOURCES = CITY_DATASOURCES[CITY]
