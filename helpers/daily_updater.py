@@ -1,6 +1,7 @@
 import time
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 import random
+import sys
 
 import tqdm
 
@@ -113,7 +114,7 @@ def save_to_db(cursor, data: list[ListingItem], conn) -> bool:
 
 def update_listings(cursor, conn, service: Service) -> bool:
     all_present = False
-    for i in tqdm.tqdm(range(PAGES)):
+    for i in tqdm.tqdm(range(PAGES), file=sys.stdout):
         li_chunk = scrape_page(service.search_url_dict[CITY], i, service)
         all_present = save_to_db(cursor, li_chunk, conn)
         if all_present:

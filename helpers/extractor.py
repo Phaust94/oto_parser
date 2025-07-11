@@ -1,3 +1,4 @@
+import sys
 import time
 import random
 
@@ -157,7 +158,7 @@ def process_missing_metadata(
     cursor, conn, ai_client, service: Service
 ) -> list[tuple[str, str]]:
     urls = get_slugs(cursor, service)
-    for listing_id, url in tqdm.tqdm(urls):
+    for listing_id, url in tqdm.tqdm(urls, file=sys.stdout):
         body = get_html_url(url)
         metadata = extract_info(listing_id, body, service)
         metadata.to_db(cursor)
@@ -176,7 +177,7 @@ def process_missing_ai_metadata(
     cursor, conn, ai_client, service: Service
 ) -> list[tuple[str, str]]:
     urls = get_slugs_no_ai(cursor, service)
-    for listing_id, url, raw_info in tqdm.tqdm(urls):
+    for listing_id, url, raw_info in tqdm.tqdm(urls, file=sys.stdout):
         ai_info = extract_ai_info(listing_id, raw_info, ai_client, service)
         ai_info.to_db(conn.cursor())
         conn.commit()
@@ -188,7 +189,7 @@ def process_missing_ai_metadata(
 def check_alive(cursor, conn, service: Service) -> tuple[list[str], list[str]]:
     urls = get_slugs_alive(cursor, service)
     alive, dead = [], []
-    for listing_id, url in tqdm.tqdm(urls):
+    for listing_id, url in tqdm.tqdm(urls, file=sys.stdout):
         body = get_html_url(url)
         if body is None:
             metadata = ListingGone(listing_id=listing_id, service=service.value)

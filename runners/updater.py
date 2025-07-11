@@ -5,6 +5,7 @@ from helpers.connection import (
     get_db_credentials,
     get_ai_client,
     get_tg_info,
+    CURRENT_DATASOURCES,
 )
 from helpers.extractor import process_missing_metadata, process_missing_ai_metadata
 from helpers.daily_updater import update_listings
@@ -45,7 +46,7 @@ def main(
     cursor = conn.cursor()
     ai_client = get_ai_client()
     tg_info = get_tg_info()
-    services_to_update = services_to_update or Service
+    services_to_update = services_to_update or [Service(x) for x in CURRENT_DATASOURCES]
 
     for service in services_to_update:
         main_single_service(

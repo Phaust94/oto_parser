@@ -18,6 +18,7 @@ __all__ = [
     "CITY",
     "DATABASE",
     "NOMINATIM_AGENT",
+    "CURRENT_DATASOURCES",
 ]
 
 load_dotenv()
@@ -105,3 +106,6 @@ DB_DI = {
 DATABASE = DB_DI[CITY]
 
 NOMINATIM_AGENT = os.environ.get("NOMINATIM_AGENT", "dummy123")
+
+CITY_DATASOURCES = {"Warsaw": ["otodom", "olx"], "Krakow": ["otodom"]}
+CURRENT_DATASOURCES = CITY_DATASOURCES[CITY]
