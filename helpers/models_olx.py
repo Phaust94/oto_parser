@@ -107,6 +107,25 @@ class ListingAdditionalInfoOLX(ListingAdditionalInfo):
 
     TABLE_NAME: typing.ClassVar[str] = "listing_metadata_olx"
 
+    @staticmethod
+    def parse_params(soup: BeautifulSoup) -> dict[str, str | None]:
+        parameters_cont = soup.find(attrs={"data-testid": "ad-parameters-container"})
+        out = {k: None for k in PROPERTY_TO_REGEXP.keys()}
+        if parameters_cont is None:
+            parameters = soup.find_all("span")
+        else:
+            parameters = parameters_cont.find_all("p")
+
+        for param in parameters:
+            for prop, regexp_info in PROPERTY_TO_REGEXP.items():
+                res = re.findall(regexp_info.regexp, param.text)
+                if not res:
+                    continue
+                res = regexp_info.convertor_func(res[0])
+                out[prop] = res
+                break
+        return out
+
     @classmethod
     def from_text(
         cls, text: str, listing_id: str, city: str
@@ -122,19 +141,7 @@ class ListingAdditionalInfoOLX(ListingAdditionalInfo):
         else:
             raise ValueError("Failed to parse JSON")
 
-        parameters = soup.find(
-            attrs={"data-testid": "ad-parameters-container"}
-        ).find_all("p")
-        out = {k: None for k in PROPERTY_TO_REGEXP.keys()}
-        for param in parameters:
-            for prop, regexp_info in PROPERTY_TO_REGEXP.items():
-                res = re.findall(regexp_info.regexp, param.text)
-                if not res:
-                    continue
-                res = regexp_info.convertor_func(res[0])
-                out[prop] = res
-                break
-
+        out = cls.parse_params(soup)
         inst = cls(
             listing_id=listing_id,
             description_long=json_desc["description"],

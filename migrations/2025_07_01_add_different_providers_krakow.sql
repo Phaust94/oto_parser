@@ -1,4 +1,4 @@
-create table otodom.listing_items_2 (
+create table otodom_krakow.listing_items_2 (
   `listing_id` varchar(100) NOT NULL,
   `title` varchar(255) NOT NULL,
   `slug` varchar(255) NOT NULL,
@@ -16,7 +16,7 @@ create table otodom.listing_items_2 (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
 ;
 
-insert into otodom.listing_items_2
+insert into otodom_krakow.listing_items_2
 select
  cast(listing_id as CHAR),
   title,
@@ -30,37 +30,37 @@ select
   district,
   district_specific,
   created_on
-from otodom.listing_items
+from otodom_krakow.listing_items
 ;
 
-rename table otodom.listing_items to otodom.listing_items_bak, otodom.listing_items_2 to otodom.listing_items
+rename table otodom_krakow.listing_items to otodom_krakow.listing_items_bak, otodom_krakow.listing_items_2 to otodom_krakow.listing_items
 ;
 
-alter table otodom.listing_metadata
+alter table otodom_krakow.listing_metadata
 modify listing_id varchar(100)
 ;
 
-alter table otodom.decisions
+alter table otodom_krakow.decisions
 modify listing_id varchar(100)
 ;
 
-alter table otodom.irrelevant_listings
+alter table otodom_krakow.irrelevant_listings
 modify listing_id varchar(100)
 ;
 
-alter table otodom.listing_ai_metadata
+alter table otodom_krakow.listing_ai_metadata
 modify listing_id varchar(100)
 ;
 
-alter table otodom.irrelevant_listings
+alter table otodom_krakow.irrelevant_listings
 add column service varchar(20) default 'otodom'
 ;
 
-alter table otodom.decisions
+alter table otodom_krakow.decisions
 add column service varchar(20) default 'otooom'
 ;
 
-CREATE TABLE otodom.listing_items_olx (
+CREATE TABLE otodom_krakow.listing_items_olx (
   `listing_id` varchar(100) NOT NULL,
   `title` varchar(255) NOT NULL,
   `slug` varchar(255) NOT NULL,
@@ -71,7 +71,7 @@ CREATE TABLE otodom.listing_items_olx (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
 ;
 
-CREATE TABLE otodom.listing_metadata_olx (
+CREATE TABLE otodom_krakow.listing_metadata_olx (
   `listing_id` varchar(100) NOT NULL,
   `floor` int DEFAULT NULL,
   `description_long` mediumtext NOT NULL,
@@ -84,7 +84,7 @@ CREATE TABLE otodom.listing_metadata_olx (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
 ;
 
-CREATE TABLE otodom.listing_ai_metadata_olx (
+CREATE TABLE otodom_krakow.listing_ai_metadata_olx (
   `listing_id` varchar(100) NOT NULL,
   `allowed_with_pets` tinyint(1) DEFAULT NULL,
   `availability_date` varchar(50) DEFAULT NULL,
@@ -104,7 +104,7 @@ CREATE TABLE otodom.listing_ai_metadata_olx (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
 ;
 
-create or replace view otodom.listing_info_full
+create or replace view otodom_krakow.listing_info_full
 as
 with otodom_full as (
     select
@@ -141,11 +141,11 @@ with otodom_full as (
         `c`.`kitchen_combined_with_living_room` AS `kitchen_combined_with_living_room`,
         `c`.`updated_at` AS `parsed_on`,
         `b`.`distance_from_center_km` AS `distance_from_center_km`,
-        concat('https://www.otodom.pl/pl/oferta/', `a`.`slug`) AS `url`
-    from otodom.listing_items as a
-    left join otodom.listing_metadata as b
+        concat('https://www.otodom_krakow.pl/pl/oferta/', `a`.`slug`) AS `url`
+    from otodom_krakow.listing_items as a
+    left join otodom_krakow.listing_metadata as b
     on (a.listing_id = b.listing_id)
-    left join otodom.listing_ai_metadata as c
+    left join otodom_krakow.listing_ai_metadata as c
     on (a.listing_id = c.listing_id)
 )
 , olx_full as (
@@ -184,10 +184,10 @@ with otodom_full as (
         `c`.`updated_at` AS `parsed_on`,
         `c`.`distance_from_center_km` AS `distance_from_center_km`,
         concat('https://www.olx.pl/d/oferta/', `a`.`slug`, '.html') AS `url`
-    from otodom.listing_items_olx as a
-    left join otodom.listing_metadata_olx as b
+    from otodom_krakow.listing_items_olx as a
+    left join otodom_krakow.listing_metadata_olx as b
     on (a.listing_id = b.listing_id)
-    left join otodom.listing_ai_metadata_olx as c
+    left join otodom_krakow.listing_ai_metadata_olx as c
     on (a.listing_id = c.listing_id)
 )
 , combined as (
@@ -204,9 +204,9 @@ with otodom_full as (
         end) AS `irrelevant`,
         `d`.`our_decision` AS `our_decision`
     from combined as a
-    left join otodom.decisions as d
+    left join otodom_krakow.decisions as d
     on (a.listing_id = d.listing_id and a.service = d.service)
-    left join otodom.irrelevant_listings as f
+    left join otodom_krakow.irrelevant_listings as f
     on (a.listing_id = f.listing_id and a.service = f.service)
 )
 select *
