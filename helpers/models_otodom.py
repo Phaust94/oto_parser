@@ -80,7 +80,7 @@ class ListingItemOtodom(ListingItem):
         body = json.loads(script)
         listings = get_listings(body)
         for listing in listings[:-1]:
-            inst = ListingItem.from_otodom_data(listing)
+            inst = cls.from_otodom_data(listing)
             listing_items.append(inst)
         return listing_items
 
