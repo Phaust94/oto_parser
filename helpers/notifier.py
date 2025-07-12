@@ -128,7 +128,7 @@ def format_msg(di: dict) -> str:
     District: {district_specific}
     Occasional lease: {occasional_lease}
     Availability date: {availability_date}
-    Distance: {distance_from_center_km}
+    Distance: {distance_from_center_km:.1f}
     Location: <a href="https://www.google.com/maps/dir/{center}/{latitude},{longitude}">Maps</a>
     Metabase link: <a href="https://metabase.home.arpa/dashboard/{dash}?bedrooms=&decision=&listing_id={listing_id}&not_okazjonalny=&not_pets=&distance_from_center_max=&price_max=&not_separate_kitchen=&rooms=&undecided%253F=">Metabase</a>
     """.format(
