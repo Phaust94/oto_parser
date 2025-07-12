@@ -36,6 +36,7 @@ def update_listings(cursor, conn, service: Service) -> bool:
     for i in tqdm.tqdm(range(1, PAGES), file=sys.stdout):
         li_chunk = scrape_page(i, service)
         all_present = save_to_db(cursor, li_chunk, conn)
+        all_present = True
         if all_present:
             break
         time.sleep(10 + random.randint(1, 1000) / 1000)

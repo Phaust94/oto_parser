@@ -108,7 +108,8 @@ def get_slugs(cursor, service: Service) -> list[tuple[str, str]]:
 def get_slugs_no_ai(cursor, service: Service) -> list[tuple[str, str, str]]:
     query = f"""
     with urls as (
-        select listing_id, min(url) as url
+        select 
+            {service.info_for_ai.select_columns}
         from listing_info_full
         where 1=1
         and scraped
@@ -119,11 +120,9 @@ def get_slugs_no_ai(cursor, service: Service) -> list[tuple[str, str, str]]:
         order by listing_id 
     )
     select 
-        urls.*,
-        listing_metadata.{service.info_for_ai}
+        urls.* {service.info_for_ai.select_top_level_additional}
     from urls
-    inner join listing_metadata
-    on (urls.listing_id = listing_metadata.listing_id)
+    {service.info_for_ai.joins_additional}
     """
 
     cursor.execute(query)

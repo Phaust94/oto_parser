@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import abc
 import enum
 import typing
 
+import pydantic
 
 import helpers.models_base as mb
 import helpers.models_otodom as mod
@@ -12,6 +12,12 @@ import helpers.models_olx as mox
 __all__ = [
     "Service",
 ]
+
+
+class AIQueryInfo(pydantic.BaseModel):
+    select_columns: str
+    select_top_level_additional: str
+    joins_additional: str
 
 
 class Service(enum.Enum):
@@ -59,9 +65,26 @@ class Service(enum.Enum):
         return di[self]
 
     @property
-    def info_for_ai(self) -> str:
+    def info_for_ai(self) -> AIQueryInfo:
         di = {
-            self.Otodom: "raw_info",
-            self.OLX: "description_long",
+            self.Otodom: AIQueryInfo(
+                select_columns="listing_id, min(url) as url",
+                select_top_level_additional=", listing_metadata.raw_info",
+                joins_additional="""inner join listing_metadata
+                on (urls.listing_id = listing_metadata.listing_id)""",
+            ),
+            self.OLX: AIQueryInfo(
+                select_columns="listing_id, min(url) as url, max(description_long) as description_long",
+                select_top_level_additional="",
+                joins_additional="",
+            ),
+        }
+        return di[self]
+
+    @property
+    def ad_parsing_needed(self) -> bool:
+        di = {
+            self.Otodom: True,
+            self.OLX: False,
         }
         return di[self]

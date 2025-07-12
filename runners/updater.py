@@ -27,7 +27,7 @@ def main_single_service(
 
     md_func = (
         process_missing_ai_metadata
-        if metadata_update_only_ai_switch
+        if metadata_update_only_ai_switch or not service.ad_parsing_needed
         else process_missing_metadata
     )
     new_listing_info = md_func(cursor, conn, ai_client, service)
