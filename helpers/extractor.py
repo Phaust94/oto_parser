@@ -62,8 +62,8 @@ def extract_ai_info(
     """
 
     ai_data = dict(
-        # model='gemini-2.5-flash-preview-04-17',
-        model="gemini-2.0-flash",
+        model="gemini-2.5-pro",
+        # model="gemini-2.0-flash",
         contents=message,
         config={
             "response_mime_type": "application/json",
@@ -163,7 +163,7 @@ def process_missing_metadata(
         metadata.to_db(cursor)
         conn.commit()
         if not isinstance(metadata, ListingGone):
-            text_for_ai = getattr(metadata, service.info_for_ai)
+            text_for_ai = getattr(metadata, service.info_for_ai.select_columns)
             ai_info = extract_ai_info(listing_id, text_for_ai, ai_client, service)
             ai_info.to_db(conn.cursor())
             conn.commit()
@@ -182,6 +182,7 @@ def process_missing_ai_metadata(
         conn.commit()
         time.sleep(random.randint(0, 1000) / 1000)
     urls_fixed = [x[:2] for x in urls]
+    # noinspection PyTypeChecker
     return urls_fixed
 
 

@@ -4,7 +4,8 @@ SEARCH_PARAMS = [
     {"key": "category_id", "value": "15"},
     {"key": "region_id", "value": "2"},
     {"key": "city_id", "value": "17871"},
-    {"key": "sort_by", "value": "created_at:desc"},
     {"key": "filter_enum_rooms[0]", "value": "three"},
     {"key": "filter_enum_rooms[1]", "value": "four"},
+    {"key": "sort_by", "value": "created_at:desc"},
+    {"key": "filter_refiners", "value": "spell_checker"},
 ]

@@ -68,6 +68,8 @@ def query_url_as_human(url, method: str = "GET", body: dict = None):
     }
     if method == "POST":
         to_pass["json"] = body
+        headers["Content-Type"] = "application/json"
+        headers["Accept"] = "application/json"
 
     try:
         response = requests.request(**to_pass)

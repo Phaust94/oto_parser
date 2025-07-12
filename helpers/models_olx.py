@@ -98,7 +98,7 @@ class ListingItemOLX(ListingItem):
     def from_text(cls, text: str) -> list[ListingItemOLX]:
         listing_items = []
         jo = json.loads(text)
-        res = jo["data"]["clientCompatibleListings"]["data"]
+        res = jo["data"]["clientCompatibleListings"].get("data", [])
         for offer in res:
             if offer["external_url"] is not None or "olx.pl" not in offer["url"]:
                 continue
@@ -172,15 +172,18 @@ LIMIT = 40
 
 
 def get_page(page_num: int) -> str:
+    offset = page_num * LIMIT
     search_params_current = SEARCH_PARAMS.copy()
     search_params_current.append({"key": "limit", "value": str(LIMIT)})
-    search_params_current.append({"key": "offset", "value": str(page_num * LIMIT)})
+    search_params_current.append({"key": "offset", "value": str(offset)})
     params = {
         "query": OLX_QUERY,
         "variables": {
-            "searchParameters": SEARCH_PARAMS,
+            "searchParameters": search_params_current,
         },
     }
+    if offset > 1000:
+        return "{}"
 
     res = query_url_as_human(url=BASE_URL, method="POST", body=params)
     text = res.text

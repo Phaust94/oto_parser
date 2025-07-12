@@ -57,7 +57,7 @@ add column service varchar(20) default 'otodom'
 ;
 
 alter table otodom_krakow.decisions
-add column service varchar(20) default 'otooom'
+add column service varchar(20) default 'otodom'
 ;
 
 DROP TABLE IF EXISTS otodom_krakow.listing_items_olx
@@ -185,9 +185,9 @@ with otodom_full as (
     on (a.listing_id = c.listing_id)
 )
 , combined as (
-    select *, 'otodom' as service from otodom_full
+    select *, CONVERT('otodom' using utf8mb4) as service from otodom_full
     UNION ALL
-    select *, 'olx' as service from olx_full
+    select *, CONVERT('olx' using utf8mb4)as service from olx_full
 )
 , added_decisions as (
     select

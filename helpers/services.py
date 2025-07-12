@@ -18,6 +18,7 @@ class AIQueryInfo(pydantic.BaseModel):
     select_columns: str
     select_top_level_additional: str
     joins_additional: str
+    text_instance_attribute: str
 
 
 class Service(enum.Enum):
@@ -72,11 +73,13 @@ class Service(enum.Enum):
                 select_top_level_additional=", listing_metadata.raw_info",
                 joins_additional="""inner join listing_metadata
                 on (urls.listing_id = listing_metadata.listing_id)""",
+                text_instance_attribute="raw_info",
             ),
             self.OLX: AIQueryInfo(
                 select_columns="listing_id, min(url) as url, max(description_long) as description_long",
                 select_top_level_additional="",
                 joins_additional="",
+                text_instance_attribute="description_long",
             ),
         }
         return di[self]

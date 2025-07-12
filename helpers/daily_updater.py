@@ -4,7 +4,6 @@ import sys
 
 import tqdm
 
-from helpers.connection import CITY
 from helpers.models_base import ListingItem
 from helpers.services import Service
 
@@ -33,10 +32,9 @@ def save_to_db(cursor, data: list[ListingItem], conn) -> bool:
 
 def update_listings(cursor, conn, service: Service) -> bool:
     all_present = False
-    for i in tqdm.tqdm(range(1, PAGES), file=sys.stdout):
+    for i in tqdm.tqdm(range(PAGES), file=sys.stdout):
         li_chunk = scrape_page(i, service)
         all_present = save_to_db(cursor, li_chunk, conn)
-        all_present = True
         if all_present:
             break
         time.sleep(10 + random.randint(1, 1000) / 1000)
