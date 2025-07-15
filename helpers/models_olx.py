@@ -62,6 +62,7 @@ class ListingItemOLX(ListingItem):
     has_lift: bool | None = pydantic.Field(default=None)
     latitude: str | None = pydantic.Field(default=None)
     longitude: str | None = pydantic.Field(default=None)
+    slug_external: str | None = pydantic.Field(default=None)
 
     distance_from_center_km: float
 
@@ -86,11 +87,16 @@ class ListingItemOLX(ListingItem):
             floor=floor_from_text(get_by_key(params, "floor_select", "label")),
             description_long=obj["description"],
             raw_info=obj["description"],
-            district=obj["location"].get("district", {}).get("name"),
+            district=(obj.get("location", {}).get("district", {}) or {}).get("name"),
             has_lift=str_to_bool(get_by_key(params, "winda", "key")),
             latitude=str(lat),
             longitude=str(lon),
             distance_from_center_km=dist_from_root(CITY, lat, lon),
+            slug_external=(
+                obj["external_url"].split("/")[-1].split(".")[0]
+                if obj.get("external_url")
+                else None
+            ),
         )
         return inst
 
@@ -100,7 +106,7 @@ class ListingItemOLX(ListingItem):
         jo = json.loads(text)
         res = jo["data"]["clientCompatibleListings"].get("data", [])
         for offer in res:
-            if offer["external_url"] is not None or "olx.pl" not in offer["url"]:
+            if offer["external_url"] is None:
                 continue
             inst = cls.from_jo_single(offer)
             listing_items.append(inst)

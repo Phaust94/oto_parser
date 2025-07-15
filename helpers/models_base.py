@@ -81,7 +81,26 @@ class Saveable(pydantic.BaseModel):
             res = cursor.fetchall()
             return bool(res)
         except mysql.connector.Error as err:
-            print(f"Error during upsert for {self}: {err}")
+            print(f"Error during id check for {self}: {err}")
+            return False
+        else:
+            return False
+
+    def is_present_in_db_slug_external(
+        self, cursor: mysql.connector.cursor.MySQLCursor
+    ) -> bool:
+        # Construct the full SQL query
+        sql = f"""
+        select listing_id from {self.__class__.TABLE_NAME}
+        where slug = %(slug)s
+        """
+
+        try:
+            cursor.execute(sql, {"slug": self.slug_external})
+            res = cursor.fetchall()
+            return bool(res)
+        except mysql.connector.Error as err:
+            print(f"Error during select check for {self}: {err}")
             return False
         else:
             return False
