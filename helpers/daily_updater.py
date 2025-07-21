@@ -10,7 +10,7 @@ from helpers.services import Service
 __all__ = ["update_listings"]
 
 
-PAGES = 36
+PAGES = 19
 
 
 def scrape_page(page_num: int, service: Service) -> list[ListingItem]:

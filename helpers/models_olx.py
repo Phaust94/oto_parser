@@ -106,8 +106,6 @@ class ListingItemOLX(ListingItem):
         jo = json.loads(text)
         res = jo["data"]["clientCompatibleListings"].get("data", [])
         for offer in res:
-            if offer["external_url"] is None:
-                continue
             inst = cls.from_jo_single(offer)
             listing_items.append(inst)
 
@@ -179,7 +177,7 @@ LIMIT = 40
 
 def get_page(page_num: int) -> str:
     offset = page_num * LIMIT
-    search_params_current = SEARCH_PARAMS.copy()
+    search_params_current = SEARCH_PARAMS[CITY].copy()
     search_params_current.append({"key": "limit", "value": str(LIMIT)})
     search_params_current.append({"key": "offset", "value": str(offset)})
     params = {

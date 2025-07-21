@@ -58,8 +58,14 @@ CONDITIONS_DI = {
     (
         "Krakow",
         True,
-    ): """AND total_rent_price <= 2100
+    ): """AND total_rent_price <= 2500
         AND (has_lift OR floor <= 1)""",
+    (
+        "Krakow",
+        False,
+    ): """AND total_rent_price <= 2500
+    AND not (has_lift OR floor <= 1)
+    """,
     (
         "Warsaw",
         False,
